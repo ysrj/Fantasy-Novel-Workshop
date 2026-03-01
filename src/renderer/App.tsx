@@ -10,6 +10,7 @@ import Stats from './views/Stats/Stats'
 import Settings from './views/Settings/Settings'
 import InspirationManager from './views/Inspiration/InspirationManager'
 import AIAssistant from './views/AIAssistant/AIAssistant'
+import AICreator from './views/AICreator/AICreator'
 import { useProjectStore } from './stores/projectStore'
 
 function App(): JSX.Element {
@@ -29,6 +30,7 @@ function App(): JSX.Element {
         <Route path="writing" element={<WritingEditor />} />
         <Route path="inspiration" element={<InspirationManager />} />
         <Route path="ai" element={<AIAssistant />} />
+        <Route path="ai-creator" element={<AICreator />} />
         <Route path="analysis" element={<Analysis />} />
         <Route path="stats" element={<Stats />} />
       </Route>

@@ -11,7 +11,8 @@ import {
   LeftOutlined,
   UserOutlined,
   BulbOutlined,
-  RobotOutlined
+  RobotOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
@@ -54,6 +55,11 @@ function Workspace(): JSX.Element {
       key: 'ai',
       icon: <RobotOutlined />,
       label: t.aiAssistant
+    },
+    {
+      key: 'ai-creator',
+      icon: <ThunderboltOutlined />,
+      label: 'AI创作'
     },
     {
       key: 'stats',

@@ -115,6 +115,18 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('ai:enhanceWriting', (_, content, type) =>
     aiService.enhanceWriting(content, type)
   )
+  ipcMain.handle('ai:generateLyrics', async (_, projectId, style) => {
+    const chapters = writingService.listChapters(projectId)
+    const contents = chapters.map(c => writingService.getChapter(projectId, c.id)).filter(Boolean) as string[]
+    const content = contents.join('\n\n').slice(0, 5000)
+    return aiService.generateLyrics(content, style)
+  })
+  ipcMain.handle('ai:generateScript', async (_, projectId, type) => {
+    const chapters = writingService.listChapters(projectId)
+    const contents = chapters.map(c => writingService.getChapter(projectId, c.id)).filter(Boolean) as string[]
+    const content = contents.join('\n\n').slice(0, 5000)
+    return aiService.generateScript(content, type)
+  })
   ipcMain.handle('ai:generate', (_, prompt, model) =>
     aiService.generate(prompt, model)
   )

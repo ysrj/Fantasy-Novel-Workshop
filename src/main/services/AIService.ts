@@ -173,4 +173,42 @@ export class AIService {
 
     return this.generate(prompt)
   }
+
+  async generateLyrics(content: string, style: string = '古风'): Promise<string | null> {
+    if (!this.ollamaAvailable) {
+      return null
+    }
+
+    const prompt = `请根据以下玄幻小说内容，创作一首${style}风格的歌词。要求：
+1. 歌词要符合小说情节和意境
+2. 押韵工整，意境优美
+3. 可以包含小说中的角色名、场景名、情感元素
+4. 歌词长度适中（8-16句）
+
+小说内容：
+${content}
+
+请直接输出歌词，不要有其他说明：`
+
+    return this.generate(prompt)
+  }
+
+  async generateScript(content: string, type: string = '小说'): Promise<string | null> {
+    if (!this.ollamaAvailable) {
+      return null
+    }
+
+    const prompt = `请将以下${type}内容改编成剧本格式。要求：
+1. 使用标准的剧本格式：场景描述、角色动作、对话
+2. 保留原故事的精华情节
+3. 添加适当的舞台指示和情感标注
+4. 人物对话要符合角色性格
+
+原文内容：
+${content}
+
+请直接输出剧本格式内容：`
+
+    return this.generate(prompt)
+  }
 }
