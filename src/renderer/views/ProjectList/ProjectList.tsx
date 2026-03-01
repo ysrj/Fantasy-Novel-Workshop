@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, Input, Modal, Form, message } from 'antd'
-import { PlusOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, BookOutlined, FolderOutlined } from '@ant-design/icons'
 import { useProjectStore, Project } from '../../stores/projectStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 declare global {
   interface Window {
@@ -16,12 +17,16 @@ function ProjectList(): JSX.Element {
   const navigate = useNavigate()
   const { projects, setProjects, addProject, removeProject, loading, setLoading } =
     useProjectStore()
+  const translations = useSettingsStore((state) => state.getTranslations())
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [customPath, setCustomPath] = useState('')
   const [form] = Form.useForm()
 
   useEffect(() => {
     loadProjects()
   }, [])
+
+  const t = translations
 
   const loadProjects = async (): Promise<void> => {
     setLoading(true)
@@ -29,14 +34,29 @@ function ProjectList(): JSX.Element {
       const projectList = await window.api.invoke<Project[]>('project:list')
       setProjects(projectList)
     } catch (error) {
-      message.error('加载项目失败')
+      message.error(t.error || 'Error')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleSelectPath = async (): Promise<void> => {
+    try {
+      const path = await window.api.invoke<string | null>('dialog:selectFolder')
+      if (path) {
+        setCustomPath(path)
+      }
+    } catch (error) {
+      message.error('Error selecting folder')
+    }
+  }
+
   const handleCreate = async (values: { title: string; description: string; targetWordCount: number }): Promise<void> => {
     try {
+      if (customPath) {
+        await window.api.invoke('settings:setCustomDataPath', customPath)
+      }
+      
       const newProject = await window.api.invoke<Project>('project:create', {
         title: values.title,
         description: values.description,
@@ -46,26 +66,27 @@ function ProjectList(): JSX.Element {
       addProject(newProject)
       setIsModalVisible(false)
       form.resetFields()
-      message.success('项目创建成功')
+      setCustomPath('')
+      message.success(t.success || 'Success')
     } catch (error) {
-      message.error('创建项目失败')
+      message.error(t.error || 'Error')
     }
   }
 
   const handleDelete = async (projectId: string, e: React.MouseEvent): Promise<void> => {
     e.stopPropagation()
     Modal.confirm({
-      title: '确认删除',
-      content: '确定要删除这个项目吗？此操作不可恢复。',
-      okText: '确认',
-      cancelText: '取消',
+      title: t.confirmDelete || 'Confirm',
+      content: t.deleteWarning || 'Are you sure?',
+      okText: t.confirm || 'OK',
+      cancelText: t.cancel || 'Cancel',
       onOk: async () => {
         try {
           await window.api.invoke('project:delete', projectId)
           removeProject(projectId)
-          message.success('项目已删除')
+          message.success(t.success || 'Success')
         } catch (error) {
-          message.error('删除项目失败')
+          message.error(t.error || 'Error')
         }
       }
     })
@@ -81,17 +102,17 @@ function ProjectList(): JSX.Element {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 600 }}>
           <BookOutlined style={{ marginRight: 8 }} />
-          我的作品
+          {t.myProjects || 'My Projects'}
         </h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
-          新建项目
+          {t.newProject || 'New Project'}
         </Button>
       </div>
 
       {projects.length === 0 && !loading ? (
         <Card style={{ textAlign: 'center', padding: 48 }}>
           <BookOutlined style={{ fontSize: 48, color: '#ccc', marginBottom: 16 }} />
-          <p style={{ color: '#999' }}>暂无作品，点击"新建项目"开始创作</p>
+          <p style={{ color: '#999' }}>{t.noProjects || 'No projects yet'}</p>
         </Card>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
@@ -107,7 +128,7 @@ function ProjectList(): JSX.Element {
                   icon={<DeleteOutlined />}
                   onClick={(e) => handleDelete(project.id, e)}
                 >
-                  删除
+                  {t.delete || 'Delete'}
                 </Button>
               ]}
             >
@@ -115,10 +136,10 @@ function ProjectList(): JSX.Element {
                 title={project.title}
                 description={
                   <div>
-                    <p>{project.description || '暂无简介'}</p>
+                    <p>{project.description || ''}</p>
                     <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>
-                      目标字数: {project.targetWordCount.toLocaleString()} |
-                      创建于: {new Date(project.createdAt).toLocaleDateString()}
+                      {t.targetWordCount || 'Target'}: {project.targetWordCount.toLocaleString()} |
+                      {t.createdAt || 'Created'}: {new Date(project.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 }
@@ -129,32 +150,48 @@ function ProjectList(): JSX.Element {
       )}
 
       <Modal
-        title="新建项目"
+        title={t.newProject || 'New Project'}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false)
+          setCustomPath('')
+        }}
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item
             name="title"
-            label="作品标题"
-            rules={[{ required: true, message: '请输入作品标题' }]}
+            label={t.projectTitle || 'Title'}
+            rules={[{ required: true, message: t.projectTitle || 'Required' }]}
           >
-            <Input placeholder="输入作品标题" />
+            <Input placeholder={t.projectTitle || 'Enter title'} />
           </Form.Item>
-          <Form.Item name="description" label="作品简介">
-            <Input.TextArea rows={3} placeholder="输入作品简介（可选）" />
+          <Form.Item name="description" label={t.projectDescription || 'Description'}>
+            <Input.TextArea rows={3} placeholder={t.projectDescription || 'Enter description'} />
           </Form.Item>
           <Form.Item
             name="targetWordCount"
-            label="目标字数"
+            label={t.targetWordCount || 'Target Words'}
             initialValue={100000}
           >
-            <Input type="number" placeholder="目标字数" />
+            <Input type="number" placeholder="100000" />
+          </Form.Item>
+          <Form.Item label={t.dataPath || 'Data Path'}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Input
+                value={customPath}
+                onChange={(e) => setCustomPath(e.target.value)}
+                placeholder={t.selectFolder || 'Select folder'}
+                style={{ flex: 1 }}
+              />
+              <Button icon={<FolderOutlined />} onClick={handleSelectPath}>
+                {t.selectFolder || 'Browse'}
+              </Button>
+            </div>
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" block>
-              创建
+              {t.createProject || 'Create'}
             </Button>
           </Form.Item>
         </Form>

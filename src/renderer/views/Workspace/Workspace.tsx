@@ -14,6 +14,7 @@ import {
   RobotOutlined
 } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 const { Sider, Header, Content } = Layout
 
@@ -21,42 +22,43 @@ function Workspace(): JSX.Element {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { currentProject } = useProjectStore()
+  const t = useSettingsStore(state => state.getTranslations())
 
   const menuItems = [
     {
       key: 'outline',
       icon: <BookOutlined />,
-      label: '大纲'
+      label: t.outline
     },
     {
       key: 'characters',
       icon: <TeamOutlined />,
-      label: '角色'
+      label: t.characters
     },
     {
       key: 'world',
       icon: <GlobalOutlined />,
-      label: '世界观'
+      label: t.world
     },
     {
       key: 'writing',
       icon: <EditOutlined />,
-      label: '正文'
+      label: t.writing
     },
     {
       key: 'inspiration',
       icon: <BulbOutlined />,
-      label: '灵感'
+      label: t.inspiration
     },
     {
       key: 'ai',
       icon: <RobotOutlined />,
-      label: 'AI辅助'
+      label: t.aiAssistant
     },
     {
       key: 'stats',
       icon: <BarChartOutlined />,
-      label: '统计'
+      label: t.stats
     }
   ]
 
@@ -70,7 +72,7 @@ function Workspace(): JSX.Element {
         {
           key: 'settings',
           icon: <SettingOutlined />,
-          label: '设置',
+          label: t.settings,
           onClick: () => navigate('/settings')
         }
       ]}
@@ -87,10 +89,10 @@ function Workspace(): JSX.Element {
             onClick={() => navigate('/')}
             style={{ marginBottom: 8 }}
           >
-            返回列表
+            {t.backToList}
           </Button>
           <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {currentProject?.title || '未命名项目'}
+            {currentProject?.title || ''}
           </div>
         </div>
         <Menu
@@ -105,7 +107,7 @@ function Workspace(): JSX.Element {
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderBottom: '1px solid #e8e8e8' }}>
           <Space>
             <Dropdown overlay={userMenu} placement="bottomRight">
-              <Button icon={<UserOutlined />}>用户</Button>
+              <Button icon={<UserOutlined />}>{t.settings}</Button>
             </Dropdown>
           </Space>
         </Header>

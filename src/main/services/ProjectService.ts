@@ -3,6 +3,9 @@ import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import log from 'electron-log'
+import Store from 'electron-store'
+
+const store = new Store()
 
 export interface ProjectMetadata {
   id: string
@@ -13,13 +16,22 @@ export interface ProjectMetadata {
   tags: string[]
   createdAt: string
   updatedAt: string
+  customPath?: string
 }
 
 interface ProjectsConfig {
   projects: string[]
 }
 
-const DATA_DIR = join(app.getPath('userData'), 'data')
+function getDataDir(): string {
+  const customPath = store.get('customDataPath', '') as string
+  if (customPath && existsSync(customPath)) {
+    return customPath
+  }
+  return join(app.getPath('userData'), 'data')
+}
+
+const DATA_DIR = getDataDir()
 const PROJECTS_DIR = join(DATA_DIR, 'projects')
 const PROJECTS_JSON = join(DATA_DIR, 'projects.json')
 
@@ -46,13 +58,22 @@ function saveProjectsConfig(config: ProjectsConfig): void {
 }
 
 export class ProjectService {
+  private getCurrentDataDir(): string {
+    return getDataDir()
+  }
+
+  private getCurrentProjectsDir(): string {
+    return join(this.getCurrentDataDir(), 'projects')
+  }
+
   listProjects(): ProjectMetadata[] {
     ensureDataDir()
     const config = loadProjectsConfig()
     const projects: ProjectMetadata[] = []
+    const projectsDir = this.getCurrentProjectsDir()
 
     for (const projectId of config.projects) {
-      const metaPath = join(PROJECTS_DIR, projectId, 'metadata.json')
+      const metaPath = join(projectsDir, projectId, 'metadata.json')
       if (existsSync(metaPath)) {
         const meta = JSON.parse(readFileSync(metaPath, 'utf-8'))
         projects.push(meta)
@@ -78,7 +99,8 @@ export class ProjectService {
       updatedAt: now
     }
 
-    const projectDir = join(PROJECTS_DIR, id)
+    const projectsDir = this.getCurrentProjectsDir()
+    const projectDir = join(projectsDir, id)
     mkdirSync(projectDir, { recursive: true })
     mkdirSync(join(projectDir, 'outline'), { recursive: true })
     mkdirSync(join(projectDir, 'characters'), { recursive: true })
@@ -101,7 +123,8 @@ export class ProjectService {
   }
 
   getProject(projectId: string): ProjectMetadata | null {
-    const metaPath = join(PROJECTS_DIR, projectId, 'metadata.json')
+    const projectsDir = this.getCurrentProjectsDir()
+    const metaPath = join(projectsDir, projectId, 'metadata.json')
     if (!existsSync(metaPath)) {
       return null
     }
@@ -110,7 +133,8 @@ export class ProjectService {
 
   deleteProject(projectId: string): boolean {
     const config = loadProjectsConfig()
-    const projectDir = join(PROJECTS_DIR, projectId)
+    const projectsDir = this.getCurrentProjectsDir()
+    const projectDir = join(projectsDir, projectId)
 
     if (!existsSync(projectDir)) {
       return false
@@ -126,6 +150,18 @@ export class ProjectService {
   }
 
   getProjectPath(projectId: string): string {
-    return join(PROJECTS_DIR, projectId)
+    const projectsDir = this.getCurrentProjectsDir()
+    return join(projectsDir, projectId)
+  }
+
+  getSettings(): { customDataPath: string } {
+    return {
+      customDataPath: store.get('customDataPath', '') as string
+    }
+  }
+
+  setCustomDataPath(path: string): void {
+    store.set('customDataPath', path)
+    log.info(`Custom data path set to: ${path}`)
   }
 }

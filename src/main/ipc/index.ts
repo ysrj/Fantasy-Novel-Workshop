@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
+import Store from 'electron-store'
 import { ProjectService } from '../services/ProjectService'
 import { OutlineService } from '../services/OutlineService'
 import { CharacterService } from '../services/CharacterService'
@@ -10,6 +11,7 @@ import { AIService } from '../services/AIService'
 import { MaterialService } from '../services/MaterialService'
 import { ExportService } from '../services/ExportService'
 
+const store = new Store()
 let dbInitialized = false
 
 const projectService = new ProjectService()
@@ -36,6 +38,28 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('project:create', (_, metadata) => projectService.createProject(metadata))
   ipcMain.handle('project:delete', (_, projectId) => projectService.deleteProject(projectId))
   ipcMain.handle('project:get', (_, projectId) => projectService.getProject(projectId))
+  ipcMain.handle('project:getSettings', () => projectService.getSettings())
+
+  // Settings handlers
+  ipcMain.handle('settings:get', (_, key) => store.get(key))
+  ipcMain.handle('settings:set', (_, key, value) => store.set(key, value))
+  ipcMain.handle('settings:getAll', () => store.store)
+  ipcMain.handle('settings:setCustomDataPath', (_, path) => {
+    store.set('customDataPath', path)
+    return true
+  })
+
+  // Dialog handlers
+  ipcMain.handle('dialog:selectFolder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: '选择数据存储文件夹'
+    })
+    if (result.canceled) {
+      return null
+    }
+    return result.filePaths[0]
+  })
 
   // Outline handlers
   ipcMain.handle('outline:load', (_, projectId) => outlineService.loadOutline(projectId))

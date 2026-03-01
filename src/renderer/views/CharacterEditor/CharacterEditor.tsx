@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Card, Input, Button, Space, List, Modal, Form, Select, message } from 'antd'
 import { PlusOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 interface Character {
   id: string
@@ -21,6 +22,7 @@ interface Character {
 function CharacterEditor(): JSX.Element {
   const { projectId } = useParams()
   const { currentProject } = useProjectStore()
+  const t = useSettingsStore(state => state.getTranslations())
   const [characters, setCharacters] = useState<Character[]>([])
   const [selectedChar, setSelectedChar] = useState<Character | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
@@ -38,7 +40,7 @@ function CharacterEditor(): JSX.Element {
       const data = await window.api.invoke<Character[]>('character:list', projectId)
       setCharacters(data)
     } catch (error) {
-      message.error('加载角色失败')
+      message.error(t.error)
     }
   }
 
@@ -46,9 +48,9 @@ function CharacterEditor(): JSX.Element {
     if (!projectId) return
     try {
       await window.api.invoke('character:save', projectId, characters)
-      message.success('角色已保存')
+      message.success(t.saved)
     } catch (error) {
-      message.error('保存角色失败')
+      message.error(t.error)
     }
   }
 
@@ -84,9 +86,9 @@ function CharacterEditor(): JSX.Element {
     <div style={{ padding: 24, height: '100%', display: 'flex', gap: 16 }}>
       <div style={{ width: 280, background: '#fff', borderRadius: 8, padding: 16, overflow: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>角色列表</h3>
+          <h3 style={{ margin: 0 }}>{t.characterList}</h3>
           <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAdd}>
-            添加
+            {t.addCharacter}
           </Button>
         </div>
         <List
@@ -95,10 +97,10 @@ function CharacterEditor(): JSX.Element {
             <List.Item
               actions={[
                 <Button type="link" size="small" onClick={() => handleEdit(char)}>
-                  编辑
+                  {t.editCharacter}
                 </Button>,
                 <Button type="link" danger size="small" onClick={() => handleDelete(char.id)}>
-                  删除
+                  {t.delete}
                 </Button>
               ]}
             >
@@ -114,12 +116,12 @@ function CharacterEditor(): JSX.Element {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
               <h2>{selectedChar.name}</h2>
               <Button icon={<SaveOutlined />} onClick={saveCharacters}>
-                保存
+                {t.save}
               </Button>
             </div>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div>
-                <label>姓名: </label>
+                <label>{t.name}: </label>
                 <Input
                   value={selectedChar.name}
                   onChange={(e) => {
@@ -130,7 +132,7 @@ function CharacterEditor(): JSX.Element {
                 />
               </div>
               <div>
-                <label>角色定位: </label>
+                <label>{t.role}: </label>
                 <Input
                   value={selectedChar.role}
                   onChange={(e) => {
@@ -141,7 +143,7 @@ function CharacterEditor(): JSX.Element {
                 />
               </div>
               <div>
-                <label>外貌描述: </label>
+                <label>{t.appearance}: </label>
                 <Input.TextArea
                   rows={3}
                   value={selectedChar.appearance}
@@ -153,7 +155,7 @@ function CharacterEditor(): JSX.Element {
                 />
               </div>
               <div>
-                <label>性格特点: </label>
+                <label>{t.personality}: </label>
                 <Input.TextArea
                   rows={3}
                   value={selectedChar.personality}
@@ -168,31 +170,31 @@ function CharacterEditor(): JSX.Element {
           </>
         ) : (
           <div style={{ textAlign: 'center', color: '#999', marginTop: 48 }}>
-            选择或添加角色进行编辑
+            {t.selectOrAddCharacter}
           </div>
         )}
       </div>
 
       <Modal
-        title={selectedChar ? '编辑角色' : '添加角色'}
+        title={selectedChar ? t.editCharacter : t.addCharacter}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={handleSave}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="姓名" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t.name} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="role" label="角色定位">
-            <Input placeholder="主角/配角/反派等" />
+          <Form.Item name="role" label={t.role}>
+            <Input placeholder="主角/配角/反派" />
           </Form.Item>
-          <Form.Item name="gender" label="性别">
+          <Form.Item name="gender" label={t.gender}>
             <Select options={[{ value: '男' }, { value: '女' }, { value: '其他' }]} />
           </Form.Item>
-          <Form.Item name="appearance" label="外貌描述">
+          <Form.Item name="appearance" label={t.appearance}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="personality" label="性格特点">
+          <Form.Item name="personality" label={t.personality}>
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>
