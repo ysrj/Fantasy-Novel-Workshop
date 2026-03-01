@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Space, List, Input, Modal, message } from 'antd'
-import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { Button, Space, List, Modal, message, Tabs } from 'antd'
+import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined, CheckCircleOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons'
+import MDEditor from '@uiw/react-md-editor'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useEditorStore } from '../../stores/editorStore'
 
 interface Chapter {
@@ -22,6 +25,7 @@ function WritingEditor(): JSX.Element {
   const [initialContent, setInitialContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState<'edit' | 'preview'>('edit')
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -163,6 +167,55 @@ function WritingEditor(): JSX.Element {
     })
   }
 
+  const tabItems = [
+    {
+      key: 'edit',
+      label: (
+        <span>
+          <EditOutlined /> 编辑
+        </span>
+      ),
+      children: (
+        <MDEditor
+          value={content}
+          onChange={(val) => {
+            setContent(val || '')
+            setDirty(true)
+          }}
+          height="100%"
+          preview={false}
+          enableScroll={true}
+          textareaProps={{
+            placeholder: '开始写作...'
+          }}
+        />
+      )
+    },
+    {
+      key: 'preview',
+      label: (
+        <span>
+          <EyeOutlined /> 预览
+        </span>
+      ),
+      children: (
+        <div 
+          className="markdown-preview"
+          style={{
+            padding: 24,
+            height: '100%',
+            overflow: 'auto',
+            background: '#fff'
+          }}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content || '*无可预览内容*'}
+          </ReactMarkdown>
+        </div>
+      )
+    }
+  ]
+
   return (
     <div style={{ height: '100%', display: 'flex' }}>
       <div style={{ width: 260, background: '#fff', borderRight: '1px solid #e8e8e8', display: 'flex', flexDirection: 'column' }}>
@@ -245,24 +298,13 @@ function WritingEditor(): JSX.Element {
                 </Button>
               </Space>
             </div>
-            <div style={{ flex: 1, padding: 24 }}>
-              <textarea
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 16,
-                  lineHeight: 1.8,
-                  fontFamily: '"Monaco", "Menlo", "Ubuntu Mono", monospace',
-                  resize: 'none'
-                }}
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value)
-                  setDirty(true)
-                }}
-                placeholder="开始写作..."
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <Tabs 
+                activeKey={editMode} 
+                onChange={(key) => setEditMode(key as 'edit' | 'preview')}
+                items={tabItems}
+                style={{ height: '100%' }}
+                tabBarStyle={{ margin: 0, paddingLeft: 16 }}
               />
             </div>
           </>
@@ -279,11 +321,12 @@ function WritingEditor(): JSX.Element {
         onCancel={() => setIsModalVisible(false)}
         onOk={createChapter}
       >
-        <Input
+        <input
           value={newChapterTitle}
           onChange={(e) => setNewChapterTitle(e.target.value)}
           placeholder="输入章节标题"
           onPressEnter={createChapter}
+          style={{ width: '100%', padding: '8px 12px', border: '1px solid #d9d9d9', borderRadius: 4 }}
         />
       </Modal>
     </div>
