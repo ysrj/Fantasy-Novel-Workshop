@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Space, List, Input, Modal, message } from 'antd'
-import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined } from '@ant-design/icons'
 import { useEditorStore } from '../../stores/editorStore'
 
 interface Chapter {
@@ -14,16 +14,24 @@ interface Chapter {
 
 function WritingEditor(): JSX.Element {
   const { projectId } = useParams()
+  const navigate = useNavigate()
   const { currentChapterId, content, setCurrentChapter, setContent, isDirty, setDirty } = useEditorStore()
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [newChapterTitle, setNewChapterTitle] = useState('')
+  const [initialContent, setInitialContent] = useState('')
 
   useEffect(() => {
     if (projectId) {
       loadChapters()
     }
   }, [projectId])
+
+  useEffect(() => {
+    if (content) {
+      setInitialContent(content)
+    }
+  }, [currentChapterId])
 
   const loadChapters = async (): Promise<void> => {
     if (!projectId) return
@@ -37,10 +45,17 @@ function WritingEditor(): JSX.Element {
 
   const loadChapterContent = async (chapterId: string): Promise<void> => {
     if (!projectId) return
+    
+    if (isDirty) {
+      message.warning('请先保存当前章节的更改')
+      return
+    }
+    
     try {
-      const content = await window.api.invoke<string>('writing:getChapter', projectId, chapterId)
+      const chapterContent = await window.api.invoke<string>('writing:getChapter', projectId, chapterId)
       setCurrentChapter(chapterId)
-      setContent(content || '')
+      setContent(chapterContent || '')
+      setInitialContent(chapterContent || '')
       setDirty(false)
     } catch (error) {
       message.error('加载章节内容失败')
@@ -51,11 +66,32 @@ function WritingEditor(): JSX.Element {
     if (!projectId || !currentChapterId) return
     try {
       await window.api.invoke('writing:saveChapter', projectId, currentChapterId, content)
+      setInitialContent(content)
       setDirty(false)
       message.success('章节已保存')
       loadChapters()
     } catch (error) {
       message.error('保存章节失败')
+    }
+  }
+
+  const handleReset = (): void => {
+    setContent(initialContent)
+    setDirty(false)
+    message.info('已重置')
+  }
+
+  const handleCancel = (): void => {
+    setContent(initialContent)
+    setDirty(false)
+    message.info('已取消更改')
+  }
+
+  const handleBack = (): void => {
+    if (isDirty) {
+      message.warning('您有未保存的更改')
+    } else {
+      navigate(-1)
     }
   }
 
@@ -86,6 +122,7 @@ function WritingEditor(): JSX.Element {
           if (currentChapterId === chapterId) {
             setCurrentChapter(null)
             setContent('')
+            setInitialContent('')
           }
           message.success('章节已删除')
         } catch (error) {
@@ -141,13 +178,35 @@ function WritingEditor(): JSX.Element {
         {currentChapterId ? (
           <>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 500 }}>
-                {chapters.find((c) => c.id === currentChapterId)?.title}
-                {isDirty && <span style={{ color: '#faad14', marginLeft: 8 }}>（未保存）</span>}
-              </span>
-              <Button type="primary" icon={<SaveOutlined />} onClick={saveChapter}>
-                保存
-              </Button>
+              <Space>
+                <Button icon={<RollbackOutlined />} onClick={handleBack}>
+                  返回
+                </Button>
+                <span style={{ fontWeight: 500 }}>
+                  {chapters.find((c) => c.id === currentChapterId)?.title}
+                  {isDirty && <span style={{ color: '#faad14', marginLeft: 8 }}>（未保存）</span>}
+                </span>
+              </Space>
+              <Space>
+                {isDirty && (
+                  <>
+                    <Button onClick={handleCancel}>
+                      取消
+                    </Button>
+                    <Button onClick={handleReset}>
+                      重置
+                    </Button>
+                  </>
+                )}
+                <Button 
+                  type="primary" 
+                  icon={<SaveOutlined />} 
+                  onClick={saveChapter}
+                  disabled={!isDirty}
+                >
+                  保存
+                </Button>
+              </Space>
             </div>
             <div style={{ flex: 1, padding: 24 }}>
               <textarea

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, Select, Button, message } from 'antd'
-import { SaveOutlined, FolderOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { Card, Form, Input, Select, Button, message, Space } from 'antd'
+import { SaveOutlined, FolderOutlined, RollbackOutlined, UndoOutlined } from '@ant-design/icons'
 import { useSettingsStore } from '../../stores/settingsStore'
 
 function Settings(): JSX.Element {
+  const navigate = useNavigate()
   const {
     language, theme, autoSaveInterval, fontSize, font,
     customDataPath, ollamaAddress, aiModel,
@@ -13,9 +15,11 @@ function Settings(): JSX.Element {
 
   const [form] = Form.useForm()
   const [dataPath, setDataPath] = useState(customDataPath)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [initialValues, setInitialValues] = useState<any>({})
 
   useEffect(() => {
-    form.setFieldsValue({
+    const values = {
       language,
       theme,
       autoSaveInterval,
@@ -23,18 +27,22 @@ function Settings(): JSX.Element {
       font,
       ollamaAddress,
       aiModel
-    })
+    }
+    form.setFieldsValue(values)
     setDataPath(customDataPath)
+    setInitialValues({ ...values, customDataPath })
   }, [])
+
+  const handleValuesChange = (): void => {
+    setHasChanges(true)
+  }
 
   const handleSelectFolder = async (): Promise<void> => {
     try {
       const path = await window.api.invoke<string | null>('dialog:selectFolder')
       if (path) {
         setDataPath(path)
-        setCustomDataPath(path)
-        await window.api.invoke('settings:setCustomDataPath', path)
-        message.success('存储路径已设置')
+        setHasChanges(true)
       }
     } catch (error) {
       message.error('选择文件夹失败')
@@ -51,6 +59,7 @@ function Settings(): JSX.Element {
       setFont(values.font)
       setOllamaAddress(values.ollamaAddress)
       setAiModel(values.aiModel)
+      setCustomDataPath(dataPath)
 
       await window.api.invoke('settings:set', 'language', values.language)
       await window.api.invoke('settings:set', 'theme', values.theme)
@@ -59,10 +68,46 @@ function Settings(): JSX.Element {
       await window.api.invoke('settings:set', 'font', values.font)
       await window.api.invoke('settings:set', 'ollamaAddress', values.ollamaAddress)
       await window.api.invoke('settings:set', 'aiModel', values.aiModel)
+      
+      if (dataPath) {
+        await window.api.invoke('settings:setCustomDataPath', dataPath)
+      }
 
+      setInitialValues({ ...values, customDataPath: dataPath })
+      setHasChanges(false)
       message.success('设置已保存')
     } catch (error) {
       message.error('保存设置失败')
+    }
+  }
+
+  const handleReset = (): void => {
+    form.setFieldsValue({
+      language: 'zh-CN',
+      theme: 'light',
+      autoSaveInterval: 30,
+      fontSize: 16,
+      font: 'monospace',
+      ollamaAddress: 'http://localhost:11434',
+      aiModel: 'llama2'
+    })
+    setDataPath('')
+    setHasChanges(true)
+    message.info('已重置为默认值')
+  }
+
+  const handleCancel = (): void => {
+    form.setFieldsValue(initialValues)
+    setDataPath(initialValues.customDataPath || '')
+    setHasChanges(false)
+    message.info('已取消更改')
+  }
+
+  const handleBack = (): void => {
+    if (hasChanges) {
+      message.warning('您有未保存的更改')
+    } else {
+      navigate(-1)
     }
   }
 
@@ -73,10 +118,19 @@ function Settings(): JSX.Element {
 
   return (
     <div style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
-      <h2 style={{ marginBottom: 24 }}>系统设置</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>系统设置</h2>
+        <Button icon={<RollbackOutlined />} onClick={handleBack}>
+          返回
+        </Button>
+      </div>
 
       <Card title="基本设置" style={{ marginBottom: 16 }}>
-        <Form form={form} layout="vertical">
+        <Form 
+          form={form} 
+          layout="vertical"
+          onValuesChange={handleValuesChange}
+        >
           <Form.Item name="language" label="语言">
             <Select options={languageOptions} />
           </Form.Item>
@@ -104,7 +158,11 @@ function Settings(): JSX.Element {
       </Card>
 
       <Card title="编辑器设置" style={{ marginBottom: 16 }}>
-        <Form form={form} layout="vertical">
+        <Form 
+          form={form} 
+          layout="vertical"
+          onValuesChange={handleValuesChange}
+        >
           <Form.Item name="fontSize" label="字体大小">
             <Select>
               <Select.Option value={14}>14px</Select.Option>
@@ -130,7 +188,11 @@ function Settings(): JSX.Element {
       </Card>
 
       <Card title="AI设置（可选）">
-        <Form form={form} layout="vertical">
+        <Form 
+          form={form} 
+          layout="vertical"
+          onValuesChange={handleValuesChange}
+        >
           <Form.Item name="ollamaAddress" label="Ollama地址">
             <Input placeholder="http://localhost:11434" />
           </Form.Item>
@@ -144,10 +206,30 @@ function Settings(): JSX.Element {
         </Form>
       </Card>
 
-      <div style={{ marginTop: 24, textAlign: 'right' }}>
-        <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-          保存设置
-        </Button>
+      <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
+        <Space>
+          <Button icon={<UndoOutlined />} onClick={handleReset}>
+            重置
+          </Button>
+          {hasChanges && (
+            <Button onClick={handleCancel}>
+              取消更改
+            </Button>
+          )}
+        </Space>
+        <Space>
+          <Button onClick={handleBack}>
+            返回
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<SaveOutlined />} 
+            onClick={handleSave}
+            disabled={!hasChanges}
+          >
+            保存设置
+          </Button>
+        </Space>
       </div>
     </div>
   )

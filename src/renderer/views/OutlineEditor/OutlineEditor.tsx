@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Input, Button, Space, message } from 'antd'
-import { SaveOutlined } from '@ant-design/icons'
+import { SaveOutlined, RollbackOutlined, UndoOutlined } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 
@@ -16,10 +16,13 @@ interface OutlineData {
 
 function OutlineEditor(): JSX.Element {
   const { projectId } = useParams()
+  const navigate = useNavigate()
   const { currentProject } = useProjectStore()
   const t = useSettingsStore(state => state.getTranslations())
   const [outline, setOutline] = useState<OutlineData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [initialData, setInitialData] = useState<OutlineData | null>(null)
 
   useEffect(() => {
     if (projectId) {
@@ -33,20 +36,51 @@ function OutlineEditor(): JSX.Element {
     try {
       const data = await window.api.invoke<OutlineData>('outline:load', projectId)
       setOutline(data)
+      setInitialData(JSON.parse(JSON.stringify(data)))
     } catch (error) {
-      message.error(t.error)
+      message.error('加载大纲失败')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleChange = (): void => {
+    setHasChanges(true)
   }
 
   const saveOutline = async (): Promise<void> => {
     if (!projectId || !outline) return
     try {
       await window.api.invoke('outline:save', projectId, outline)
-      message.success(t.saved)
+      setInitialData(JSON.parse(JSON.stringify(outline)))
+      setHasChanges(false)
+      message.success('大纲已保存')
     } catch (error) {
-      message.error(t.error)
+      message.error('保存大纲失败')
+    }
+  }
+
+  const handleReset = (): void => {
+    if (initialData) {
+      setOutline(JSON.parse(JSON.stringify(initialData)))
+      setHasChanges(false)
+      message.info('已重置')
+    }
+  }
+
+  const handleCancel = (): void => {
+    if (initialData) {
+      setOutline(JSON.parse(JSON.stringify(initialData)))
+      setHasChanges(false)
+      message.info('已取消更改')
+    }
+  }
+
+  const handleBack = (): void => {
+    if (hasChanges) {
+      message.warning('您有未保存的更改，请先保存')
+    } else {
+      navigate(-1)
     }
   }
 
@@ -57,22 +91,43 @@ function OutlineEditor(): JSX.Element {
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>{t.outlineManagement}</h2>
-        <Button type="primary" icon={<SaveOutlined />} onClick={saveOutline}>
-          {t.save}
-        </Button>
+        <h2 style={{ margin: 0 }}>大纲管理</h2>
+        <Space>
+          <Button icon={<RollbackOutlined />} onClick={handleBack}>
+            返回
+          </Button>
+          {hasChanges && (
+            <Button onClick={handleCancel}>
+              取消
+            </Button>
+          )}
+          <Button icon={<UndoOutlined />} onClick={handleReset}>
+            重置
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<SaveOutlined />} 
+            onClick={saveOutline}
+            disabled={!hasChanges}
+          >
+            保存
+          </Button>
+        </Space>
       </div>
 
-      <Card title={t.storyOutline} style={{ marginBottom: 16 }}>
+      <Card title="故事大纲" style={{ marginBottom: 16 }}>
         <Input.TextArea
           rows={6}
           value={outline.storyOutline}
-          onChange={(e) => setOutline({ ...outline, storyOutline: e.target.value })}
-          placeholder={t.storyOutline}
+          onChange={(e) => {
+            setOutline({ ...outline, storyOutline: e.target.value })
+            handleChange()
+          }}
+          placeholder="输入故事整体大纲..."
         />
       </Card>
 
-      <Card title={t.structurePlanning} style={{ marginBottom: 16 }}>
+      <Card title="结构规划" style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           {outline.structure.stages.map((stage, index) => (
             <div key={index} style={{ padding: 12, background: '#fafafa', borderRadius: 6 }}>
@@ -82,8 +137,9 @@ function OutlineEditor(): JSX.Element {
                   const newStages = [...outline.structure.stages]
                   newStages[index].name = e.target.value
                   setOutline({ ...outline, structure: { ...outline.structure, stages: newStages } })
+                  handleChange()
                 }}
-                placeholder={t.structurePlanning}
+                placeholder="阶段名称"
                 style={{ marginBottom: 8, fontWeight: 600 }}
               />
               <Input.TextArea
@@ -93,35 +149,35 @@ function OutlineEditor(): JSX.Element {
                   const newStages = [...outline.structure.stages]
                   newStages[index].description = e.target.value
                   setOutline({ ...outline, structure: { ...outline.structure, stages: newStages } })
+                  handleChange()
                 }}
-                placeholder={stage.name}
+                placeholder="阶段描述"
               />
             </div>
           ))}
         </Space>
       </Card>
 
-      <Card title={t.chapterOutline}>
+      <Card title="章节大纲">
         <Space direction="vertical" style={{ width: '100%' }}>
           {outline.chapterOutlines.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>
-              {t.noProjects}
+              暂无章节大纲
             </div>
           ) : (
             outline.chapterOutlines.map((chapter, index) => (
               <div key={chapter.id} style={{ padding: 12, background: '#fafafa', borderRadius: 6 }}>
-                <Space style={{ width: '100%', marginBottom: 8 }}>
-                  <Input
-                    value={chapter.title}
-                    onChange={(e) => {
-                      const newChapters = [...outline.chapterOutlines]
-                      newChapters[index].title = e.target.value
-                      setOutline({ ...outline, chapterOutlines: newChapters })
-                    }}
-                    placeholder={t.chapterTitle}
-                    style={{ flex: 1 }}
-                  />
-                </Space>
+                <Input
+                  value={chapter.title}
+                  onChange={(e) => {
+                    const newChapters = [...outline.chapterOutlines]
+                    newChapters[index].title = e.target.value
+                    setOutline({ ...outline, chapterOutlines: newChapters })
+                    handleChange()
+                  }}
+                  placeholder="章节标题"
+                  style={{ marginBottom: 8 }}
+                />
                 <Input.TextArea
                   rows={2}
                   value={chapter.summary}
@@ -129,8 +185,9 @@ function OutlineEditor(): JSX.Element {
                     const newChapters = [...outline.chapterOutlines]
                     newChapters[index].summary = e.target.value
                     setOutline({ ...outline, chapterOutlines: newChapters })
+                    handleChange()
                   }}
-                  placeholder={t.projectDescription}
+                  placeholder="章节概要"
                 />
               </div>
             ))
