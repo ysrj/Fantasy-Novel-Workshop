@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Space, List, Input, Modal, message } from 'antd'
-import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { useEditorStore } from '../../stores/editorStore'
 
 interface Chapter {
@@ -20,18 +20,27 @@ function WritingEditor(): JSX.Element {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [newChapterTitle, setNewChapterTitle] = useState('')
   const [initialContent, setInitialContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (projectId) {
       loadChapters()
     }
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
   }, [projectId])
 
   useEffect(() => {
-    if (content) {
-      setInitialContent(content)
+    if (content && currentChapterId) {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => {
+        autoSave()
+      }, 5000)
     }
-  }, [currentChapterId])
+  }, [content, isDirty])
 
   const loadChapters = async (): Promise<void> => {
     if (!projectId) return
@@ -42,6 +51,23 @@ function WritingEditor(): JSX.Element {
       message.error('加载章节失败')
     }
   }
+
+  const autoSave = useCallback(async (): Promise<void> => {
+    if (!projectId || !currentChapterId || !isDirty || saving) return
+    
+    setSaving(true)
+    try {
+      await window.api.invoke('writing:saveChapter', projectId, currentChapterId, content)
+      setInitialContent(content)
+      setDirty(false)
+      setLastSaved(new Date().toLocaleTimeString())
+      loadChapters()
+    } catch (error) {
+      console.error('Auto save failed:', error)
+    } finally {
+      setSaving(false)
+    }
+  }, [projectId, currentChapterId, content, isDirty, saving])
 
   const loadChapterContent = async (chapterId: string): Promise<void> => {
     if (!projectId) return
@@ -57,6 +83,7 @@ function WritingEditor(): JSX.Element {
       setContent(chapterContent || '')
       setInitialContent(chapterContent || '')
       setDirty(false)
+      setLastSaved(new Date().toLocaleTimeString())
     } catch (error) {
       message.error('加载章节内容失败')
     }
@@ -64,14 +91,18 @@ function WritingEditor(): JSX.Element {
 
   const saveChapter = async (): Promise<void> => {
     if (!projectId || !currentChapterId) return
+    setSaving(true)
     try {
       await window.api.invoke('writing:saveChapter', projectId, currentChapterId, content)
       setInitialContent(content)
       setDirty(false)
+      setLastSaved(new Date().toLocaleTimeString())
       message.success('章节已保存')
       loadChapters()
     } catch (error) {
       message.error('保存章节失败')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -186,6 +217,12 @@ function WritingEditor(): JSX.Element {
                   {chapters.find((c) => c.id === currentChapterId)?.title}
                   {isDirty && <span style={{ color: '#faad14', marginLeft: 8 }}>（未保存）</span>}
                 </span>
+                {lastSaved && !isDirty && (
+                  <span style={{ fontSize: 12, color: '#999' }}>
+                    <CheckCircleOutlined style={{ marginRight: 4 }} />
+                    {lastSaved}
+                  </span>
+                )}
               </Space>
               <Space>
                 {isDirty && (
@@ -202,9 +239,9 @@ function WritingEditor(): JSX.Element {
                   type="primary" 
                   icon={<SaveOutlined />} 
                   onClick={saveChapter}
-                  disabled={!isDirty}
+                  loading={saving}
                 >
-                  保存
+                  {saving ? '保存中' : '保存'}
                 </Button>
               </Space>
             </div>

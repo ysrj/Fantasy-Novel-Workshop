@@ -10,6 +10,7 @@ import { DatabaseService } from '../services/DatabaseService'
 import { AIService } from '../services/AIService'
 import { MaterialService } from '../services/MaterialService'
 import { ExportService } from '../services/ExportService'
+import { BackupService } from '../services/BackupService'
 
 const store = new Store()
 let dbInitialized = false
@@ -24,6 +25,7 @@ const databaseService = new DatabaseService()
 const aiService = new AIService()
 const materialService = new MaterialService(databaseService)
 const exportService = new ExportService()
+const backupService = new BackupService()
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -190,4 +192,11 @@ export function setupIpcHandlers(): void {
     await ensureDbInitialized()
     return databaseService.run(sql, params)
   })
+
+  // Backup handlers
+  ipcMain.handle('backup:create', () => backupService.createBackup())
+  ipcMain.handle('backup:list', () => backupService.listBackups())
+  ipcMain.handle('backup:restore', (_, backupName) => backupService.restoreBackup(backupName))
+  ipcMain.handle('backup:delete', (_, backupName) => backupService.deleteBackup(backupName))
+  ipcMain.handle('backup:getPath', () => backupService.getBackupPath())
 }
