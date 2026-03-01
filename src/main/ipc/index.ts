@@ -6,6 +6,9 @@ import { WorldService } from '../services/WorldService'
 import { WritingService } from '../services/WritingService'
 import { StatsService } from '../services/StatsService'
 import { DatabaseService } from '../services/DatabaseService'
+import { AIService } from '../services/AIService'
+import { MaterialService } from '../services/MaterialService'
+import { ExportService } from '../services/ExportService'
 
 let dbInitialized = false
 
@@ -16,6 +19,9 @@ const worldService = new WorldService()
 const writingService = new WritingService()
 const statsService = new StatsService()
 const databaseService = new DatabaseService()
+const aiService = new AIService()
+const materialService = new MaterialService(databaseService)
+const exportService = new ExportService()
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -72,6 +78,71 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('stats:get', (_, projectId) => statsService.getStats(projectId))
   ipcMain.handle('stats:update', (_, projectId, wordCount) =>
     statsService.updateWordCount(projectId, wordCount)
+  )
+
+  // AI handlers
+  ipcMain.handle('ai:checkStatus', () => aiService.checkOllamaStatus())
+  ipcMain.handle('ai:isAvailable', () => aiService.isAvailable())
+  ipcMain.handle('ai:checkConsistency', async (_, projectId) => {
+    const chapters = writingService.listChapters(projectId)
+    const contents = chapters.map(c => writingService.getChapter(projectId, c.id)).filter(Boolean) as string[]
+    return aiService.checkConsistency(projectId, contents)
+  })
+  ipcMain.handle('ai:enhanceWriting', (_, content, type) =>
+    aiService.enhanceWriting(content, type)
+  )
+  ipcMain.handle('ai:generate', (_, prompt, model) =>
+    aiService.generate(prompt, model)
+  )
+  ipcMain.handle('ai:chat', (_, messages, model) =>
+    aiService.chat(messages, model)
+  )
+
+  // Material handlers
+  ipcMain.handle('material:list', async (_, projectId) => {
+    await ensureDbInitialized()
+    return materialService.listMaterials(projectId)
+  })
+  ipcMain.handle('material:add', async (_, projectId, name, type, path, tags) => {
+    await ensureDbInitialized()
+    return materialService.addMaterial(projectId, name, type, path, tags)
+  })
+  ipcMain.handle('material:delete', async (_, id) => {
+    await ensureDbInitialized()
+    return materialService.deleteMaterial(id)
+  })
+
+  // Inspiration handlers
+  ipcMain.handle('inspiration:list', async (_, projectId) => {
+    await ensureDbInitialized()
+    return materialService.listInspirations(projectId)
+  })
+  ipcMain.handle('inspiration:add', async (_, projectId, content, tags) => {
+    await ensureDbInitialized()
+    return materialService.addInspiration(projectId, content, tags)
+  })
+  ipcMain.handle('inspiration:update', async (_, id, content, tags) => {
+    await ensureDbInitialized()
+    return materialService.updateInspiration(id, content, tags)
+  })
+  ipcMain.handle('inspiration:delete', async (_, id) => {
+    await ensureDbInitialized()
+    return materialService.deleteInspiration(id)
+  })
+  ipcMain.handle('inspiration:search', async (_, projectId, keyword) => {
+    await ensureDbInitialized()
+    return materialService.searchInspirations(projectId, keyword)
+  })
+
+  // Export handlers
+  ipcMain.handle('export:project', (_, projectId, options) =>
+    exportService.exportProject(projectId, options)
+  )
+  ipcMain.handle('export:chapter', (_, projectId, chapterId, format) =>
+    exportService.exportChapter(projectId, chapterId, format)
+  )
+  ipcMain.handle('export:list', (_, projectId) =>
+    exportService.listExports(projectId)
   )
 
   // Database handlers

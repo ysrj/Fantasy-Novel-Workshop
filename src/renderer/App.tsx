@@ -8,6 +8,8 @@ import WritingEditor from './views/WritingEditor/WritingEditor'
 import Analysis from './views/Analysis/Analysis'
 import Stats from './views/Stats/Stats'
 import Settings from './views/Settings/Settings'
+import InspirationManager from './views/Inspiration/InspirationManager'
+import AIAssistant from './views/AIAssistant/AIAssistant'
 import { useProjectStore } from './stores/projectStore'
 
 function App(): JSX.Element {
@@ -25,6 +27,8 @@ function App(): JSX.Element {
         <Route path="characters" element={<CharacterEditor />} />
         <Route path="world" element={<WorldEditor />} />
         <Route path="writing" element={<WritingEditor />} />
+        <Route path="inspiration" element={<InspirationManager />} />
+        <Route path="ai" element={<AIAssistant />} />
         <Route path="analysis" element={<Analysis />} />
         <Route path="stats" element={<Stats />} />
       </Route>

@@ -9,7 +9,9 @@ import {
   BookOutlined,
   SettingOutlined,
   LeftOutlined,
-  UserOutlined
+  UserOutlined,
+  BulbOutlined,
+  RobotOutlined
 } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
 
@@ -40,6 +42,16 @@ function Workspace(): JSX.Element {
       key: 'writing',
       icon: <EditOutlined />,
       label: '正文'
+    },
+    {
+      key: 'inspiration',
+      icon: <BulbOutlined />,
+      label: '灵感'
+    },
+    {
+      key: 'ai',
+      icon: <RobotOutlined />,
+      label: 'AI辅助'
     },
     {
       key: 'stats',
