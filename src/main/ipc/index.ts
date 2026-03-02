@@ -13,6 +13,8 @@ import { ExportService } from '../services/ExportService'
 import { BackupService } from '../services/BackupService'
 import { TagService } from '../services/TagService'
 import { ReferenceService } from '../services/ReferenceService'
+import { PluginService } from '../services/PluginService'
+import { ErrorRecoveryService } from '../services/ErrorRecoveryService'
 
 const store = new Store()
 let dbInitialized = false
@@ -30,6 +32,8 @@ const exportService = new ExportService()
 const backupService = new BackupService()
 const tagService = new TagService(databaseService)
 const referenceService = new ReferenceService(databaseService)
+const pluginService = new PluginService()
+const errorRecoveryService = new ErrorRecoveryService()
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -321,5 +325,47 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('plotline:delete', async (_, plotLineId) => {
     await ensureDbInitialized()
     return referenceService.deletePlotLine(plotLineId)
+  })
+
+  ipcMain.handle('plugin:list', () => {
+    return pluginService.listPlugins()
+  })
+
+  ipcMain.handle('plugin:enable', (_, pluginId) => {
+    return pluginService.enablePlugin(pluginId)
+  })
+
+  ipcMain.handle('plugin:disable', (_, pluginId) => {
+    return pluginService.disablePlugin(pluginId)
+  })
+
+  ipcMain.handle('errorRecovery:getConfig', () => {
+    return errorRecoveryService.getConfig()
+  })
+
+  ipcMain.handle('errorRecovery:updateConfig', (_, config) => {
+    errorRecoveryService.updateConfig(config)
+    return true
+  })
+
+  ipcMain.handle('errorRecovery:getOperations', (_, entityType, limit) => {
+    return errorRecoveryService.getRecentOperations(entityType, limit)
+  })
+
+  ipcMain.handle('errorRecovery:undo', (_, operationId) => {
+    return errorRecoveryService.undoOperation(operationId)
+  })
+
+  ipcMain.handle('errorRecovery:autoBackup', async () => {
+    return errorRecoveryService.performAutoBackup()
+  })
+
+  ipcMain.handle('errorRecovery:checkIntegrity', async (_, projectPath) => {
+    return errorRecoveryService.checkIntegrity(projectPath)
+  })
+
+  ipcMain.handle('errorRecovery:repair', async (_, projectPath, issues) => {
+    await errorRecoveryService.repairProject(projectPath, issues)
+    return true
   })
 }

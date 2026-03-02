@@ -420,3 +420,131 @@ export interface GeographyData {
   spatialRifts: Rift[]
   plotPoints: PlotPoint[]
 }
+
+export interface MenuItem {
+  id: string
+  label: string
+  icon?: string
+  accelerator?: string
+  action: string
+  position: 'file' | 'edit' | 'view' | 'tools' | 'help'
+}
+
+export interface View {
+  id: string
+  name: string
+  path: string
+  icon?: string
+}
+
+export interface ExportFormat {
+  id: string
+  name: string
+  extension: string
+  handler: string
+}
+
+export interface AIProvider {
+  id: string
+  name: string
+  endpoint: string
+  model: string
+}
+
+export interface Plugin {
+  id: string
+  name: string
+  version: string
+  description?: string
+  author?: string
+  enabled: boolean
+  menus?: MenuItem[]
+  views?: View[]
+  exports?: ExportFormat[]
+  aiProviders?: AIProvider[]
+}
+
+export interface PluginAPI {
+  registerMenuItem: (menu: MenuItem) => void
+  registerView: (view: View) => void
+  registerExportFormat: (format: ExportFormat) => void
+  registerAIProvider: (provider: AIProvider) => void
+  onProjectOpen: (callback: (project: ProjectMetadata) => void) => void
+  onChapterSave: (callback: (chapter: ChapterData) => void) => void
+  onCharacterUpdate: (callback: (character: CharacterData) => void) => void
+}
+
+export interface ProjectMetadata {
+  id: string
+  title: string
+  description: string
+  coverPath?: string
+  targetWordCount: number
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ChapterData {
+  id: string
+  projectId: string
+  title: string
+  content: string
+  wordCount: number
+}
+
+export interface CharacterData {
+  id: string
+  projectId: string
+  name: string
+  description: string
+}
+
+export interface AutoBackupConfig {
+  interval: number
+  maxBackups: number
+  onCrash: boolean
+}
+
+export interface IntegrityCheckConfig {
+  onStartup: boolean
+  onSave: boolean
+  repairStrategy: 'auto' | 'manual' | 'prompt'
+}
+
+export interface OperationLogConfig {
+  enabled: boolean
+  maxEntries: number
+  undoSteps: number
+}
+
+export interface ErrorRecoveryConfig {
+  autoBackup: AutoBackupConfig
+  integrityCheck: IntegrityCheckConfig
+  operationLog: OperationLogConfig
+}
+
+export interface OperationEntry {
+  id: string
+  timestamp: number
+  type: string
+  entityType: string
+  entityId: string
+  action: 'create' | 'update' | 'delete'
+  previousState?: string
+  newState?: string
+}
+
+export interface WorkerMessage {
+  type: 'stats' | 'relationship' | 'search' | 'export'
+  payload: any
+  requestId?: string
+}
+
+export interface WorkerResponse {
+  type: 'result' | 'error' | 'progress'
+  requestId?: string
+  data?: any
+  error?: string
+  progress?: number
+}

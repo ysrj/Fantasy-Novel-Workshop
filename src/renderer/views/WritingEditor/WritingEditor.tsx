@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Space, List, Modal, message, Tabs, Select } from 'antd'
+import { Button, Space, List, Modal, message, Tabs, Select, Empty } from 'antd'
 import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined, CheckCircleOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -254,24 +254,28 @@ function WritingEditor(): JSX.Element {
           </Button>
         </div>
         <div style={{ flex: 1, overflow: 'auto' }}>
-          <List
-            dataSource={chapters}
-            renderItem={(chapter) => (
-              <List.Item
-                style={{
-                  padding: '12px 16px',
-                  cursor: 'pointer',
-                  background: currentChapterId === chapter.id ? '#e6f7ff' : 'transparent'
-                }}
-                onClick={() => loadChapterContent(chapter.id)}
-                actions={[
-                  <Button key="delete" type="text" danger size="small" icon={<DeleteOutlined />} onClick={(e) => deleteChapter(chapter.id, e)} />
-                ]}
-              >
-                <List.Item.Meta avatar={<FileTextOutlined />} title={<span style={{ fontSize: 14 }}>{chapter.title}</span>} description={<span style={{ fontSize: 12 }}>{chapter.wordCount} 字</span>} />
-              </List.Item>
-            )}
-          />
+          {chapters.length === 0 ? (
+            <Empty description="暂无章节" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            <List
+              dataSource={chapters}
+              renderItem={(chapter) => (
+                <List.Item
+                  style={{
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    background: currentChapterId === chapter.id ? '#e6f7ff' : 'transparent'
+                  }}
+                  onClick={() => loadChapterContent(chapter.id)}
+                  actions={[
+                    <Button key="delete" type="text" danger size="small" icon={<DeleteOutlined />} onClick={(e) => deleteChapter(chapter.id, e)} />
+                  ]}
+                >
+                  <List.Item.Meta avatar={<FileTextOutlined />} title={<span style={{ fontSize: 14 }}>{chapter.title}</span>} description={<span style={{ fontSize: 12 }}>{chapter.wordCount} 字</span>} />
+                </List.Item>
+              )}
+            />
+          )}
         </div>
       </div>
 
