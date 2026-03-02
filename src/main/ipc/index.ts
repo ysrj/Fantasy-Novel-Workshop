@@ -11,6 +11,7 @@ import { AIService } from '../services/AIService'
 import { MaterialService } from '../services/MaterialService'
 import { ExportService } from '../services/ExportService'
 import { BackupService } from '../services/BackupService'
+import { TagService } from '../services/TagService'
 
 const store = new Store()
 let dbInitialized = false
@@ -26,6 +27,7 @@ const aiService = new AIService()
 const materialService = new MaterialService(databaseService)
 const exportService = new ExportService()
 const backupService = new BackupService()
+const tagService = new TagService(databaseService)
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -199,4 +201,75 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('backup:restore', (_, backupName) => backupService.restoreBackup(backupName))
   ipcMain.handle('backup:delete', (_, backupName) => backupService.deleteBackup(backupName))
   ipcMain.handle('backup:getPath', () => backupService.getBackupPath())
+
+  // Tag handlers
+  ipcMain.handle('tag:list', async (_, projectId) => {
+    await ensureDbInitialized()
+    return tagService.listTags(projectId)
+  })
+  ipcMain.handle('tag:add', async (_, projectId, name, parentId, color, description, type) => {
+    await ensureDbInitialized()
+    return tagService.addTag(projectId, name, parentId, color, description, type)
+  })
+  ipcMain.handle('tag:update', async (_, id, name, parentId, color, description) => {
+    await ensureDbInitialized()
+    return tagService.updateTag(id, name, parentId, color, description)
+  })
+  ipcMain.handle('tag:delete', async (_, id) => {
+    await ensureDbInitialized()
+    return tagService.deleteTag(id)
+  })
+
+  // Writing goal handlers
+  ipcMain.handle('goal:get', async (_, projectId, date) => {
+    await ensureDbInitialized()
+    return tagService.getWritingGoal(projectId, date)
+  })
+  ipcMain.handle('goal:set', async (_, projectId, date, targetWords) => {
+    await ensureDbInitialized()
+    return tagService.setWritingGoal(projectId, date, targetWords)
+  })
+  ipcMain.handle('goal:updateProgress', async (_, projectId, date, wordsWritten, writingTime) => {
+    await ensureDbInitialized()
+    return tagService.updateWritingProgress(projectId, date, wordsWritten, writingTime)
+  })
+  ipcMain.handle('goal:history', async (_, projectId, days) => {
+    await ensureDbInitialized()
+    return tagService.getGoalsHistory(projectId, days)
+  })
+
+  // Pomodoro handlers
+  ipcMain.handle('pomodoro:add', async (_, projectId, startTime, endTime, wordsWritten) => {
+    await ensureDbInitialized()
+    return tagService.addPomodoroSession(projectId, startTime, endTime, wordsWritten)
+  })
+  ipcMain.handle('pomodoro:stats', async (_, projectId, days) => {
+    await ensureDbInitialized()
+    return tagService.getPomodoroStats(projectId, days)
+  })
+  ipcMain.handle('pomodoro:speed', async (_, projectId, days) => {
+    await ensureDbInitialized()
+    return tagService.getWritingSpeed(projectId, days)
+  })
+
+  // AI custom prompts handlers
+  ipcMain.handle('ai:listPrompts', async (_, projectId) => {
+    await ensureDbInitialized()
+    return databaseService.query('SELECT * FROM ai_custom_prompts WHERE project_id = ?', [projectId])
+  })
+  ipcMain.handle('ai:savePrompt', async (_, projectId, id, name, prompt) => {
+    await ensureDbInitialized()
+    if (id) {
+      databaseService.run('UPDATE ai_custom_prompts SET name = ?, prompt = ? WHERE id = ?', [name, prompt, id])
+    } else {
+      const { v4: uuidv4 } = require('uuid')
+      databaseService.run('INSERT INTO ai_custom_prompts (id, project_id, name, prompt) VALUES (?, ?, ?, ?)', [uuidv4(), projectId, name, prompt])
+    }
+    return true
+  })
+  ipcMain.handle('ai:deletePrompt', async (_, id) => {
+    await ensureDbInitialized()
+    databaseService.run('DELETE FROM ai_custom_prompts WHERE id = ?', [id])
+    return true
+  })
 }

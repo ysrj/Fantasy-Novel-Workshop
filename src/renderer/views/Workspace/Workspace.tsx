@@ -12,7 +12,8 @@ import {
   UserOutlined,
   BulbOutlined,
   RobotOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  TagsOutlined
 } from '@ant-design/icons'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
@@ -50,6 +51,11 @@ function Workspace(): JSX.Element {
       key: 'inspiration',
       icon: <BulbOutlined />,
       label: t.inspiration
+    },
+    {
+      key: 'tags',
+      icon: <TagsOutlined />,
+      label: '标签'
     },
     {
       key: 'ai',

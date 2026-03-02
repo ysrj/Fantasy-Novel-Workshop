@@ -11,6 +11,7 @@ import Settings from './views/Settings/Settings'
 import InspirationManager from './views/Inspiration/InspirationManager'
 import AIAssistant from './views/AIAssistant/AIAssistant'
 import AICreator from './views/AICreator/AICreator'
+import TagManager from './views/TagManager/TagManager'
 import { useProjectStore } from './stores/projectStore'
 
 function App(): JSX.Element {
@@ -29,6 +30,7 @@ function App(): JSX.Element {
         <Route path="world" element={<WorldEditor />} />
         <Route path="writing" element={<WritingEditor />} />
         <Route path="inspiration" element={<InspirationManager />} />
+        <Route path="tags" element={<TagManager />} />
         <Route path="ai" element={<AIAssistant />} />
         <Route path="ai-creator" element={<AICreator />} />
         <Route path="analysis" element={<Analysis />} />

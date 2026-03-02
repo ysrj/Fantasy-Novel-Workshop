@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Space, List, Modal, message, Tabs } from 'antd'
+import { Button, Space, List, Modal, message, Tabs, Select } from 'antd'
 import { PlusOutlined, DeleteOutlined, SaveOutlined, FileTextOutlined, RollbackOutlined, CheckCircleOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons'
-import MDEditor from '@uiw/react-md-editor'
+import Editor from '@monaco-editor/react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEditorStore } from '../../stores/editorStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 interface Chapter {
   id: string
@@ -19,6 +20,7 @@ function WritingEditor(): JSX.Element {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { currentChapterId, content, setCurrentChapter, setContent, isDirty, setDirty } = useEditorStore()
+  const settings = useSettingsStore()
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [newChapterTitle, setNewChapterTitle] = useState('')
@@ -26,7 +28,9 @@ function WritingEditor(): JSX.Element {
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
   const [editMode, setEditMode] = useState<'edit' | 'preview'>('edit')
+  const [fontSize, setFontSize] = useState(settings.fontSize || 16)
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const editorRef = useRef<any>(null)
 
   useEffect(() => {
     if (projectId) {
@@ -42,9 +46,32 @@ function WritingEditor(): JSX.Element {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       saveTimerRef.current = setTimeout(() => {
         autoSave()
-      }, 5000)
+      }, 30000)
     }
   }, [content, isDirty])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && currentChapterId) {
+        if (e.key === 's') {
+          e.preventDefault()
+          saveChapter()
+        } else if (e.key === 'b' && editorRef.current) {
+          e.preventDefault()
+          insertText('**', '**')
+        } else if (e.key === 'i' && editorRef.current) {
+          e.preventDefault()
+          insertText('*', '*')
+        } else if (e.key === 'k' && editorRef.current) {
+          e.preventDefault()
+          insertText('[', '](url)')
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentChapterId, content])
 
   const loadChapters = async (): Promise<void> => {
     if (!projectId) return
@@ -167,47 +194,62 @@ function WritingEditor(): JSX.Element {
     })
   }
 
+  const insertText = (before: string, after: string): void => {
+    const textarea = document.querySelector('.monaco-editor textarea') as HTMLTextAreaElement
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = content.substring(start, end)
+    const newText = content.substring(0, start) + before + selectedText + after + content.substring(end)
+    setContent(newText)
+    setDirty(true)
+  }
+
+  const editorOptions = {
+    minimap: { enabled: false },
+    fontSize: fontSize,
+    lineHeight: 28,
+    wordWrap: 'on' as const,
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    renderWhitespace: 'selection' as const,
+    tabSize: 2,
+    lineNumbers: 'off' as const,
+    glyphMargin: false,
+    folding: false,
+    links: true,
+    contextmenu: true,
+    quickSuggestions: false,
+    suggestOnTriggerCharacters: false,
+  }
+
   const tabItems = [
     {
       key: 'edit',
-      label: (
-        <span>
-          <EditOutlined /> 编辑
-        </span>
-      ),
+      label: <span><EditOutlined /> 编辑</span>,
       children: (
-        <MDEditor
+        <Editor
+          height="100%"
+          language="markdown"
           value={content}
-          onChange={(val) => {
-            setContent(val || '')
+          onChange={(value) => {
+            setContent(value || '')
             setDirty(true)
           }}
-          height="100%"
-          preview={false}
-          enableScroll={true}
-          textareaProps={{
-            placeholder: '开始写作...'
+          onMount={(editor) => {
+            editorRef.current = editor
           }}
+          options={editorOptions}
+          theme="vs"
         />
       )
     },
     {
       key: 'preview',
-      label: (
-        <span>
-          <EyeOutlined /> 预览
-        </span>
-      ),
+      label: <span><EyeOutlined /> 预览</span>,
       children: (
-        <div 
-          className="markdown-preview"
-          style={{
-            padding: 24,
-            height: '100%',
-            overflow: 'auto',
-            background: '#fff'
-          }}
-        >
+        <div className="markdown-preview" style={{ padding: 24, height: '100%', overflow: 'auto', background: '#fff' }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content || '*无可预览内容*'}
           </ReactMarkdown>
@@ -237,21 +279,10 @@ function WritingEditor(): JSX.Element {
                 }}
                 onClick={() => loadChapterContent(chapter.id)}
                 actions={[
-                  <Button
-                    key="delete"
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => deleteChapter(chapter.id, e)}
-                  />
+                  <Button key="delete" type="text" danger size="small" icon={<DeleteOutlined />} onClick={(e) => deleteChapter(chapter.id, e)} />
                 ]}
               >
-                <List.Item.Meta
-                  avatar={<FileTextOutlined />}
-                  title={<span style={{ fontSize: 14 }}>{chapter.title}</span>}
-                  description={<span style={{ fontSize: 12 }}>{chapter.wordCount} 字</span>}
-                />
+                <List.Item.Meta avatar={<FileTextOutlined />} title={<span style={{ fontSize: 14 }}>{chapter.title}</span>} description={<span style={{ fontSize: 12 }}>{chapter.wordCount} 字</span>} />
               </List.Item>
             )}
           />
@@ -263,71 +294,37 @@ function WritingEditor(): JSX.Element {
           <>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Space>
-                <Button icon={<RollbackOutlined />} onClick={handleBack}>
-                  返回
-                </Button>
+                <Button icon={<RollbackOutlined />} onClick={handleBack}>返回</Button>
                 <span style={{ fontWeight: 500 }}>
                   {chapters.find((c) => c.id === currentChapterId)?.title}
                   {isDirty && <span style={{ color: '#faad14', marginLeft: 8 }}>（未保存）</span>}
                 </span>
-                {lastSaved && !isDirty && (
-                  <span style={{ fontSize: 12, color: '#999' }}>
-                    <CheckCircleOutlined style={{ marginRight: 4 }} />
-                    {lastSaved}
-                  </span>
-                )}
+                {lastSaved && !isDirty && <span style={{ fontSize: 12, color: '#999' }}><CheckCircleOutlined style={{ marginRight: 4 }} />{lastSaved}</span>}
               </Space>
               <Space>
+                <Select value={fontSize} onChange={setFontSize} style={{ width: 70 }} options={[{ value: 14, label: '14px' }, { value: 16, label: '16px' }, { value: 18, label: '18px' }, { value: 20, label: '20px' }]} />
                 {isDirty && (
                   <>
-                    <Button onClick={handleCancel}>
-                      取消
-                    </Button>
-                    <Button onClick={handleReset}>
-                      重置
-                    </Button>
+                    <Button onClick={handleCancel}>取消</Button>
+                    <Button onClick={handleReset}>重置</Button>
                   </>
                 )}
-                <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  onClick={saveChapter}
-                  loading={saving}
-                >
+                <Button type="primary" icon={<SaveOutlined />} onClick={saveChapter} loading={saving}>
                   {saving ? '保存中' : '保存'}
                 </Button>
               </Space>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <Tabs 
-                activeKey={editMode} 
-                onChange={(key) => setEditMode(key as 'edit' | 'preview')}
-                items={tabItems}
-                style={{ height: '100%' }}
-                tabBarStyle={{ margin: 0, paddingLeft: 16 }}
-              />
+              <Tabs activeKey={editMode} onChange={(key) => setEditMode(key as 'edit' | 'preview')} items={tabItems} style={{ height: '100%' }} tabBarStyle={{ margin: 0, paddingLeft: 16 }} />
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-            选择或创建章节开始写作
-          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>选择或创建章节开始写作</div>
         )}
       </div>
 
-      <Modal
-        title="新建章节"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        onOk={createChapter}
-      >
-        <input
-          value={newChapterTitle}
-          onChange={(e) => setNewChapterTitle(e.target.value)}
-          placeholder="输入章节标题"
-          onPressEnter={createChapter}
-          style={{ width: '100%', padding: '8px 12px', border: '1px solid #d9d9d9', borderRadius: 4 }}
-        />
+      <Modal title="新建章节" open={isModalVisible} onCancel={() => setIsModalVisible(false)} onOk={createChapter}>
+        <input value={newChapterTitle} onChange={(e) => setNewChapterTitle(e.target.value)} placeholder="输入章节标题" onPressEnter={createChapter} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d9d9d9', borderRadius: 4 }} />
       </Modal>
     </div>
   )

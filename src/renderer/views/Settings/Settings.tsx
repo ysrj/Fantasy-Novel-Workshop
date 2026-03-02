@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Form, Input, Select, Button, message, Space } from 'antd'
-import { SaveOutlined, FolderOutlined, RollbackOutlined, UndoOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Select, Button, message, Space, List, Popconfirm, Tag } from 'antd'
+import { SaveOutlined, FolderOutlined, RollbackOutlined, UndoOutlined, CloudUploadOutlined, FileZipOutlined, DeleteOutlined, RestOutlined } from '@ant-design/icons'
 import { useSettingsStore } from '../../stores/settingsStore'
+
+interface BackupInfo {
+  name: string
+  path: string
+  createdAt: string
+  size: string
+}
 
 function Settings(): JSX.Element {
   const navigate = useNavigate()
@@ -17,6 +24,10 @@ function Settings(): JSX.Element {
   const [dataPath, setDataPath] = useState(customDataPath)
   const [hasChanges, setHasChanges] = useState(false)
   const [initialValues, setInitialValues] = useState<any>({})
+  const [backups, setBackups] = useState<BackupInfo[]>([])
+  const [loadingBackups, setLoadingBackups] = useState(false)
+  const [creatingBackup, setCreatingBackup] = useState(false)
+  const [restoringBackup, setRestoringBackup] = useState<string | null>(null)
 
   useEffect(() => {
     const values = {
@@ -31,7 +42,20 @@ function Settings(): JSX.Element {
     form.setFieldsValue(values)
     setDataPath(customDataPath)
     setInitialValues({ ...values, customDataPath })
+    loadBackups()
   }, [])
+
+  const loadBackups = async (): Promise<void> => {
+    setLoadingBackups(true)
+    try {
+      const backupList = await window.api.invoke<BackupInfo[]>('backup:list')
+      setBackups(backupList || [])
+    } catch (error) {
+      console.error('加载备份列表失败', error)
+    } finally {
+      setLoadingBackups(false)
+    }
+  }
 
   const handleValuesChange = (): void => {
     setHasChanges(true)
@@ -111,13 +135,48 @@ function Settings(): JSX.Element {
     }
   }
 
+  const handleCreateBackup = async (): Promise<void> => {
+    setCreatingBackup(true)
+    try {
+      await window.api.invoke('backup:create')
+      message.success('备份创建成功')
+      loadBackups()
+    } catch (error) {
+      message.error('备份创建失败')
+    } finally {
+      setCreatingBackup(false)
+    }
+  }
+
+  const handleRestoreBackup = async (backupName: string): Promise<void> => {
+    setRestoringBackup(backupName)
+    try {
+      await window.api.invoke('backup:restore', backupName)
+      message.success('恢复成功，请重启应用')
+    } catch (error) {
+      message.error('恢复失败')
+    } finally {
+      setRestoringBackup(null)
+    }
+  }
+
+  const handleDeleteBackup = async (backupName: string): Promise<void> => {
+    try {
+      await window.api.invoke('backup:delete', backupName)
+      message.success('备份已删除')
+      loadBackups()
+    } catch (error) {
+      message.error('删除失败')
+    }
+  }
+
   const languageOptions = [
     { value: 'zh-CN', label: '简体中文' },
     { value: 'en-US', label: 'English' }
   ]
 
   return (
-    <div style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
+    <div style={{ padding: 24, maxWidth: 800, margin: '0 auto', overflow: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h2 style={{ margin: 0 }}>系统设置</h2>
         <Button icon={<RollbackOutlined />} onClick={handleBack}>
@@ -187,7 +246,7 @@ function Settings(): JSX.Element {
         </Form>
       </Card>
 
-      <Card title="AI设置（可选）">
+      <Card title="AI设置（可选）" style={{ marginBottom: 16 }}>
         <Form 
           form={form} 
           layout="vertical"
@@ -204,6 +263,64 @@ function Settings(): JSX.Element {
             </Select>
           </Form.Item>
         </Form>
+      </Card>
+
+      <Card 
+        title={
+          <Space>
+            <FileZipOutlined />
+            备份与恢复
+          </Space>
+        }
+        extra={
+          <Button 
+            type="primary" 
+            icon={<CloudUploadOutlined />} 
+            onClick={handleCreateBackup}
+            loading={creatingBackup}
+          >
+            一键备份
+          </Button>
+        }
+      >
+        {backups.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 24, color: '#999' }}>
+            暂无备份，点击"一键备份"创建
+          </div>
+        ) : (
+          <List
+            dataSource={backups}
+            renderItem={(backup) => (
+              <List.Item
+                actions={[
+                  <Button 
+                    key="restore" 
+                    type="link" 
+                    icon={<RestOutlined />} 
+                    onClick={() => handleRestoreBackup(backup.name)}
+                    loading={restoringBackup === backup.name}
+                  >
+                    恢复
+                  </Button>,
+                  <Popconfirm key="delete" title="确认删除此备份?" onConfirm={() => handleDeleteBackup(backup.name)}>
+                    <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={<FileZipOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                  title={
+                    <Space>
+                      {backup.name}
+                      <Tag color="blue">{backup.size}</Tag>
+                    </Space>
+                  }
+                  description={`创建时间: ${new Date(backup.createdAt).toLocaleString()}`}
+                />
+              </List.Item>
+            )}
+          />
+        )}
       </Card>
 
       <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>

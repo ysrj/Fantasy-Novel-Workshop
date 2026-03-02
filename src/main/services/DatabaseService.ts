@@ -57,10 +57,48 @@ function createTables(): void {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS tags (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
-      name TEXT NOT NULL UNIQUE,
-      color TEXT DEFAULT '#1890ff'
+      name TEXT NOT NULL,
+      parent_id TEXT,
+      color TEXT DEFAULT '#1890ff',
+      description TEXT DEFAULT '',
+      type TEXT DEFAULT 'custom',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS writing_goals (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      target_words INTEGER DEFAULT 0,
+      actual_words INTEGER DEFAULT 0,
+      pomodoro_sessions INTEGER DEFAULT 0,
+      total_writing_time INTEGER DEFAULT 0,
+      UNIQUE(project_id, date)
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS pomodoro_sessions (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      words_written INTEGER DEFAULT 0,
+      completed INTEGER DEFAULT 0
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ai_custom_prompts (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
 
