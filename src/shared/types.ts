@@ -110,3 +110,135 @@ export interface CultivationData {
   pills: Pill[]
   artifacts: Artifact[]
 }
+
+export interface Region {
+  id: string
+  name: string
+  description: string
+  color: string
+  coordinates: { x: number; y: number }
+  size: number
+}
+
+export interface Sect {
+  id: string
+  name: string
+  type: 'righteous' | 'demon' | 'neutral' | 'ancient'
+  leader?: string
+  location: string
+  territory: string
+  description: string
+  power: number
+  allies: string[]
+  enemies: string[]
+  techniques: string[]
+  resources: string[]
+}
+
+export interface Territory {
+  id: string
+  sectId: string
+  regionId: string
+  name: string
+  boundaries: { x: number; y: number }[]
+}
+
+export interface Location {
+  id: string
+  name: string
+  type: 'secret Realm' | 'ruins' | 'forbidden' | 'treasure' | 'dangerous'
+  region: string
+  coordinates: { x: number; y: number }
+  description: string
+  dangerLevel: number
+  rewards: string[]
+  requirements: string[]
+}
+
+export interface Rift {
+  id: string
+  name: string
+  fromLocation: string
+  toLocation: string
+  coordinates: { x: number; y: number }
+  description: string
+  stability: 'stable' | 'unstable' | 'dangerous'
+  requirements: string
+}
+
+export interface PlotPoint {
+  id: string
+  name: string
+  sequence: number
+  location: string
+  description: string
+  characters: string[]
+  chapters: string[]
+}
+
+export interface Era {
+  id: string
+  name: string
+  startYear: number
+  endYear: number | null
+  description: string
+  color: string
+}
+
+export interface HistoricalEvent {
+  id: string
+  eraId: string
+  year: number
+  title: string
+  description: string
+  location: string
+  characters: string[]
+  consequences: string[]
+  relatedEvents: string[]
+}
+
+export interface CharacterAge {
+  characterId: string
+  currentAge: number
+  cultivationAge: number
+  birthYear: number
+  currentYear: number
+  status: 'alive' | 'deceased' | 'missing'
+}
+
+export interface TimeSkip {
+  id: string
+  startChapter: string
+  endChapter: string
+  timePassed: number
+  unit: 'day' | 'month' | 'year' | 'decade' | 'century'
+  description: string
+}
+
+export interface CultivationPeriod {
+  id: string
+  characterId: string
+  startAge: number
+  endAge: number | null
+  realm: string
+  duration: number
+  location: string
+  events: string[]
+}
+
+export interface TimeData {
+  eras: Era[]
+  events: HistoricalEvent[]
+  characterAges: CharacterAge[]
+  timeSkips: TimeSkip[]
+  cultivationPeriods: CultivationPeriod[]
+}
+
+export interface GeographyData {
+  regions: Region[]
+  sects: Sect[]
+  territories: Territory[]
+  importantLocations: Location[]
+  spatialRifts: Rift[]
+  plotPoints: PlotPoint[]
+}
