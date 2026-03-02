@@ -17,6 +17,11 @@ interface Chapter {
   wordCount: number
 }
 
+interface EntityOption {
+  id: string
+  name: string
+}
+
 function WritingEditor(): JSX.Element {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -30,6 +35,10 @@ function WritingEditor(): JSX.Element {
   const [lastSaved, setLastSaved] = useState<string | null>(null)
   const [editMode, setEditMode] = useState<'edit' | 'preview'>('edit')
   const [fontSize, setFontSize] = useState(settings.fontSize || 16)
+  const [characters, setCharacters] = useState<EntityOption[]>([])
+  const [locations, setLocations] = useState<EntityOption[]>([])
+  const [realms, setRealms] = useState<EntityOption[]>([])
+  const [techniques, setTechniques] = useState<EntityOption[]>([])
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
@@ -54,10 +63,20 @@ function WritingEditor(): JSX.Element {
   const loadChapters = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<Chapter[]>('writing:listChapters', projectId)
-      setChapters(data)
+      const [chapterData, worldData, charData] = await Promise.all([
+        window.api.invoke<Chapter[]>('writing:listChapters', projectId),
+        window.api.invoke<any>('world:load', projectId),
+        window.api.invoke<EntityOption[]>('character:list', projectId)
+      ])
+      setChapters(chapterData)
+      setCharacters(charData || [])
+      if (worldData) {
+        setLocations((worldData.geography?.locations || []).map((l: any) => ({ id: l.id, name: l.name })))
+        setRealms((worldData.cultivation?.realms || []).map((r: any) => ({ id: r.id, name: r.name })))
+        setTechniques((worldData.cultivation?.techniques || []).map((t: any) => ({ id: t.id, name: t.name })))
+      }
     } catch (error) {
-      message.error('加载章节失败')
+      message.error('加载数据失败')
     }
   }
 
@@ -182,7 +201,7 @@ function WritingEditor(): JSX.Element {
     editor.focus()
   }
 
-  const handleSave = (value: string): void => {
+  const handleSave = (_value: string): void => {
     saveChapter()
   }
 
@@ -204,7 +223,11 @@ function WritingEditor(): JSX.Element {
           lineNumbers="off"
           minimap={false}
           folding={false}
-          renderWhitespace="selection"
+          characters={characters}
+          locations={locations}
+          realms={realms}
+          techniques={techniques}
+          chapters={chapters.map(c => ({ id: c.id, title: c.title }))}
         />
       )
     },

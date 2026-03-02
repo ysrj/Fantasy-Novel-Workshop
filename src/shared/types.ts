@@ -372,6 +372,46 @@ export interface ReferenceData {
   plotLines: PlotLine[]
 }
 
+export interface WorkspaceLayout {
+  mode: 'single' | 'split-vertical' | 'split-horizontal' | 'grid'
+  panels: Panel[]
+  activePanelId: string
+}
+
+export interface Panel {
+  id: string
+  type: 'editor' | 'outline' | 'characters' | 'world' | 'stats' | 'timeline' | 'mindmap' | 'git-history' | 'ai-assistant'
+  title: string
+  isVisible: boolean
+  size: number
+}
+
+export interface ImmersiveSettings {
+  enabled: boolean
+  hideUI: boolean
+  focusMode: boolean
+  typewriterMode: boolean
+  backgroundImage: string
+  ambientSound: string
+  fontSize: number
+  lineHeight: number
+  maxWidth: number
+}
+
+export interface SmartInput {
+  trigger: string
+  type: 'character' | 'item' | 'location' | 'tag' | 'realm' | 'technique' | 'chapter'
+  items: { id: string; name: string; type: string }[]
+}
+
+export interface WritingStats {
+  totalWords: number
+  todayWords: number
+  chapterWords: number
+  writingTime: number
+  sessions: number
+}
+
 export interface GeographyData {
   regions: Region[]
   sects: Sect[]
