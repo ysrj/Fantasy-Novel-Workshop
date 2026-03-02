@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Input, Button, Space, List, Modal, Form, Select, message, Tabs } from 'antd'
 import { PlusOutlined, SaveOutlined, RollbackOutlined, UndoOutlined, ApiOutlined } from '@ant-design/icons'
-import * as G6 from '@antv/g6'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import NovelRelationshipGraph from '../../components/RelationshipGraph/NovelRelationshipGraph'
 
 interface Character {
   id: string
@@ -40,8 +40,6 @@ function CharacterEditor(): JSX.Element {
   const [hasChanges, setHasChanges] = useState(false)
   const [initialCharacters, setInitialCharacters] = useState<Character[]>([])
   const [activeTab, setActiveTab] = useState('list')
-  const graphRef = useRef<HTMLDivElement>(null)
-  const graphInstanceRef = useRef<any>(null)
   const [form] = Form.useForm()
   const [relForm] = Form.useForm()
 
@@ -50,18 +48,7 @@ function CharacterEditor(): JSX.Element {
       loadCharacters()
       loadRelationships()
     }
-    return () => {
-      if (graphInstanceRef.current) {
-        graphInstanceRef.current.destroy()
-      }
-    }
   }, [projectId])
-
-  useEffect(() => {
-    if (activeTab === 'graph' && graphRef.current && characters.length > 0) {
-      initGraph()
-    }
-  }, [activeTab, characters, relationships])
 
   const loadCharacters = async (): Promise<void> => {
     if (!projectId) return
@@ -82,91 +69,6 @@ function CharacterEditor(): JSX.Element {
     } catch (error) {
       console.error('加载关系失败', error)
     }
-  }
-
-  const initGraph = (): void => {
-    if (!graphRef.current) return
-    
-    if (graphInstanceRef.current) {
-      graphInstanceRef.current.destroy()
-    }
-
-    const nodes = characters.map(char => ({
-      id: char.id,
-      label: char.name,
-      size: 50,
-      style: {
-        fill: getRoleColor(char.role),
-        stroke: '#666',
-        lineWidth: 2
-      },
-      labelCfg: {
-        position: 'bottom',
-        offset: 5,
-        style: { fontSize: 12 }
-      }
-    }))
-
-    const edges = relationships.map((rel, idx) => ({
-      id: `edge-${idx}`,
-      source: rel.source,
-      target: rel.target,
-      label: rel.type,
-      style: {
-        endArrow: true,
-        stroke: '#999'
-      },
-      labelCfg: {
-        autoRotate: true,
-        style: { fill: '#666', fontSize: 10 }
-      }
-    }))
-
-    try {
-      const G6Any = G6 as any
-      const graph = new G6Any.Graph({
-        container: graphRef.current,
-        width: graphRef.current.offsetWidth || 600,
-        height: 500,
-        fitView: true,
-        defaultNode: {
-          type: 'circle'
-        },
-        defaultEdge: {
-          type: 'quadratic'
-        }
-      })
-
-      graph.data({ nodes, edges })
-      graph.render()
-      graph.fitView()
-      graphInstanceRef.current = graph
-
-      graph.on('node:click', (evt: any) => {
-        const nodeId = evt.item.getID()
-        const char = characters.find(c => c.id === nodeId)
-        if (char) {
-          setSelectedChar(char)
-          setActiveTab('list')
-        }
-      })
-    } catch (e) {
-      console.error('Graph init error:', e)
-    }
-  }
-
-  const getRoleColor = (role: string): string => {
-    const colors: Record<string, string> = {
-      '主角': '#1890ff',
-      '女主': '#eb2f96',
-      '男主': '#1890ff',
-      '反派': '#ff4d4f',
-      '配角': '#52c41a',
-      '导师': '#722ed1',
-      '敌人': '#ff4d4f',
-      '盟友': '#52c41a'
-    }
-    return colors[role] || '#8c8c8c'
   }
 
   const handleChange = (): void => {
@@ -359,10 +261,32 @@ function CharacterEditor(): JSX.Element {
           <div style={{ marginBottom: 16 }}>
             <Space>
               <Button icon={<PlusOutlined />} onClick={addRelationship}>添加关系</Button>
-              <span style={{ color: '#999', fontSize: 12 }}>点击节点可查看角色详情，拖拽可调整位置</span>
+              <span style={{ color: '#999', fontSize: 12 }}>点击节点可查看角色详情</span>
             </Space>
           </div>
-          <div ref={graphRef} style={{ flex: 1, background: '#fff', borderRadius: 8 }} />
+          <NovelRelationshipGraph
+            characters={characters.map(c => ({
+              id: c.id,
+              name: c.name,
+              role: c.role,
+              realm: c.abilities,
+              faction: undefined
+            }))}
+            relationships={relationships.map(r => ({
+              source: r.source,
+              target: r.target,
+              type: r.type,
+              description: r.description
+            }))}
+            onNodeClick={(char) => {
+              const fullChar = characters.find(c => c.id === char.id)
+              if (fullChar) {
+                setSelectedChar(fullChar)
+                setActiveTab('list')
+              }
+            }}
+            layout="force"
+          />
         </div>
       )
     }
