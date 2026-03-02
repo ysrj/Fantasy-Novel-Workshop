@@ -6,8 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEditorStore } from '../../stores/editorStore'
 import { useSettingsStore } from '../../stores/settingsStore'
-import RichEditor from '../../components/RichEditor/RichEditor'
-import type { editor } from 'monaco-editor'
+import TipTapEditor from '../../components/RichEditor/TipTapEditor'
 
 interface Chapter {
   id: string
@@ -40,7 +39,6 @@ function WritingEditor(): JSX.Element {
   const [realms, setRealms] = useState<EntityOption[]>([])
   const [techniques, setTechniques] = useState<EntityOption[]>([])
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
   useEffect(() => {
     if (projectId) {
@@ -196,11 +194,6 @@ function WritingEditor(): JSX.Element {
     setDirty(true)
   }
 
-  const handleEditorMount = (editor: editor.IStandaloneCodeEditor): void => {
-    editorRef.current = editor
-    editor.focus()
-  }
-
   const handleSave = (_value: string): void => {
     saveChapter()
   }
@@ -210,19 +203,12 @@ function WritingEditor(): JSX.Element {
       key: 'edit',
       label: <span><EditOutlined /> 编辑</span>,
       children: (
-        <RichEditor
+        <TipTapEditor
           value={content}
           onChange={handleEditorChange}
-          onMount={handleEditorMount}
           onSave={handleSave}
-          language="markdown"
           fontSize={fontSize}
-          theme="vs"
           placeholder="开始写作..."
-          wordWrap="on"
-          lineNumbers="off"
-          minimap={false}
-          folding={false}
           characters={characters}
           locations={locations}
           realms={realms}
