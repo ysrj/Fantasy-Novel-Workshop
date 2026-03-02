@@ -298,6 +298,80 @@ export interface CombatData {
   validations: CrossRealmValidation[]
 }
 
+export type EntityType = 'character' | 'sect' | 'artifact' | 'location' | 'chapter' | 'realm' | 'technique' | 'pill' | 'event' | 'era'
+
+export interface EntityReference {
+  id: string
+  projectId: string
+  sourceType: EntityType
+  sourceId: string
+  targetType: EntityType
+  targetId: string
+  relationType: string
+  description: string
+  createdAt: string
+}
+
+export interface ReferenceSearch {
+  id: string
+  projectId: string
+  entityType: EntityType
+  entityId: string
+  references: EntityReference[]
+}
+
+export interface OrphanCheck {
+  entityType: EntityType
+  entityId: string
+  entityName: string
+  missingReferences: { type: EntityType; id: string }[]
+}
+
+export interface ImpactScope {
+  entityId: string
+  entityType: EntityType
+  chapters: { id: string; title: string; relevance: number }[]
+  characters: { id: string; name: string; relevance: number }[]
+  locations: { id: string; name: string; relevance: number }[]
+  totalAffected: number
+}
+
+export interface PlotLine {
+  id: string
+  projectId: string
+  name: string
+  type: 'main' | 'side' | 'hidden'
+  status: 'active' | 'dormant' | 'resolved'
+  description: string
+  involvedCharacters: string[]
+  keyEvents: string[]
+  foreshadowings: Foreshadowing[]
+  payoffs: Payoff[]
+  chapters: string[]
+  createdAt: string
+}
+
+export interface Foreshadowing {
+  id: string
+  plotLineId: string
+  chapterId: string
+  description: string
+  subtle: boolean
+}
+
+export interface Payoff {
+  id: string
+  plotLineId: string
+  chapterId: string
+  foreshadowingId: string
+  description: string
+}
+
+export interface ReferenceData {
+  references: EntityReference[]
+  plotLines: PlotLine[]
+}
+
 export interface GeographyData {
   regions: Region[]
   sects: Sect[]

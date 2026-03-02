@@ -113,6 +113,35 @@ function createTables(): void {
     )
   `)
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS entity_references (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      relation_type TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS plot_lines (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT DEFAULT 'main',
+      status TEXT DEFAULT 'active',
+      description TEXT,
+      involved_characters TEXT,
+      key_events TEXT,
+      chapters TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
   log.info('Database tables created')
 }
 

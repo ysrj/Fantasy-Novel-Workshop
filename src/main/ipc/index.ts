@@ -12,6 +12,7 @@ import { MaterialService } from '../services/MaterialService'
 import { ExportService } from '../services/ExportService'
 import { BackupService } from '../services/BackupService'
 import { TagService } from '../services/TagService'
+import { ReferenceService } from '../services/ReferenceService'
 
 const store = new Store()
 let dbInitialized = false
@@ -28,6 +29,7 @@ const materialService = new MaterialService(databaseService)
 const exportService = new ExportService()
 const backupService = new BackupService()
 const tagService = new TagService(databaseService)
+const referenceService = new ReferenceService(databaseService)
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -271,5 +273,53 @@ export function setupIpcHandlers(): void {
     await ensureDbInitialized()
     databaseService.run('DELETE FROM ai_custom_prompts WHERE id = ?', [id])
     return true
+  })
+
+  // Reference handlers
+  ipcMain.handle('reference:link', async (_, sourceType, sourceId, targetType, targetId, relationType, projectId, description) => {
+    await ensureDbInitialized()
+    return referenceService.link(sourceType, sourceId, targetType, targetId, relationType, projectId, description)
+  })
+  ipcMain.handle('reference:unlink', async (_, referenceId) => {
+    await ensureDbInitialized()
+    return referenceService.unlink(referenceId)
+  })
+  ipcMain.handle('reference:list', async (_, projectId) => {
+    await ensureDbInitialized()
+    return referenceService.getReferences(projectId)
+  })
+  ipcMain.handle('reference:forward', async (_, entityType, entityId) => {
+    await ensureDbInitialized()
+    return referenceService.findForwardReferences(entityType, entityId)
+  })
+  ipcMain.handle('reference:backward', async (_, entityType, entityId) => {
+    await ensureDbInitialized()
+    return referenceService.findBackwardReferences(entityType, entityId)
+  })
+  ipcMain.handle('reference:checkOrphans', async (_, projectId) => {
+    await ensureDbInitialized()
+    return referenceService.checkOrphanedReferences(projectId)
+  })
+  ipcMain.handle('reference:analyzeImpact', async (_, entityType, entityId, projectId) => {
+    await ensureDbInitialized()
+    return referenceService.analyzeImpact(entityType, entityId, projectId)
+  })
+  ipcMain.handle('reference:matrix', async (_, projectId) => {
+    await ensureDbInitialized()
+    return referenceService.getRelationMatrix(projectId)
+  })
+
+  // Plot line handlers
+  ipcMain.handle('plotline:save', async (_, plotLine) => {
+    await ensureDbInitialized()
+    return referenceService.savePlotLine(plotLine)
+  })
+  ipcMain.handle('plotline:list', async (_, projectId) => {
+    await ensureDbInitialized()
+    return referenceService.getPlotLines(projectId)
+  })
+  ipcMain.handle('plotline:delete', async (_, plotLineId) => {
+    await ensureDbInitialized()
+    return referenceService.deletePlotLine(plotLineId)
   })
 }
