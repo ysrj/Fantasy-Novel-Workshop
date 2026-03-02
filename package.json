@@ -27,6 +27,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@uiw/react-md-editor": "^4.0.4",
     "antd": "^5.15.0",
+    "better-sqlite3": "^9.4.3",
     "chokidar": "^3.6.0",
     "electron-log": "^5.1.1",
     "electron-store": "^8.2.0",
@@ -37,13 +38,13 @@
     "react-router-dom": "^6.22.0",
     "rehype-highlight": "^7.0.0",
     "remark-gfm": "^4.0.0",
-    "sql.js": "^1.14.0",
     "uuid": "^9.0.1",
     "zustand": "^4.5.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
+    "@types/better-sqlite3": "^7.6.9",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.19",
     "@types/react": "^18.2.57",
@@ -83,6 +84,10 @@
     "files": [
       "out/**/*",
       "resources/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
     ]
   }
 }

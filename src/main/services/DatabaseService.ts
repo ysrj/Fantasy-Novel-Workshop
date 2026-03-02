@@ -1,37 +1,30 @@
 import { app } from 'electron'
 import { join } from 'path'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import initSqlJs, { Database } from 'sql.js'
+import { existsSync, mkdirSync } from 'fs'
+import Database from 'better-sqlite3'
 import log from 'electron-log'
 
-let db: Database | null = null
+let db: Database.Database | null = null
 
 const DB_DIR = join(app.getPath('userData'), 'database')
 const DB_PATH = join(DB_DIR, 'fnw.db')
 
-async function initDatabase(): Promise<void> {
+function initDatabase(): void {
   if (!existsSync(DB_DIR)) {
     mkdirSync(DB_DIR, { recursive: true })
   }
 
-  const SQL = await initSqlJs()
-
-  if (existsSync(DB_PATH)) {
-    const buffer = readFileSync(DB_PATH)
-    db = new SQL.Database(buffer)
-    log.info('Database loaded:', DB_PATH)
-  } else {
-    db = new SQL.Database()
-    createTables()
-    saveDatabase()
-    log.info('Database created:', DB_PATH)
-  }
+  db = new Database(DB_PATH)
+  db.pragma('journal_mode = WAL')
+  
+  createTables()
+  log.info('Database initialized:', DB_PATH)
 }
 
 function createTables(): void {
   if (!db) return
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS materials (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       project_id TEXT NOT NULL,
@@ -44,7 +37,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS inspirations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       project_id TEXT NOT NULL,
@@ -55,7 +48,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS tags (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -68,7 +61,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS writing_goals (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -81,7 +74,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS pomodoro_sessions (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -92,7 +85,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS ai_custom_prompts (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -102,7 +95,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS links (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source_id TEXT NOT NULL,
@@ -113,7 +106,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS entity_references (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -127,7 +120,7 @@ function createTables(): void {
     )
   `)
 
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS plot_lines (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
@@ -145,13 +138,6 @@ function createTables(): void {
   log.info('Database tables created')
 }
 
-function saveDatabase(): void {
-  if (!db) return
-  const data = db.export()
-  const buffer = Buffer.from(data)
-  writeFileSync(DB_PATH, buffer)
-}
-
 export class DatabaseService {
   private static instance: DatabaseService | null = null
 
@@ -162,9 +148,9 @@ export class DatabaseService {
     return DatabaseService.instance
   }
 
-  async initialize(): Promise<void> {
+  initialize(): void {
     if (!db) {
-      await initDatabase()
+      initDatabase()
     }
   }
 
@@ -172,14 +158,7 @@ export class DatabaseService {
     if (!db) throw new Error('Database not initialized')
     try {
       const stmt = db.prepare(sql)
-      stmt.bind(params)
-      const results: T[] = []
-      while (stmt.step()) {
-        const row = stmt.getAsObject()
-        results.push(row as T)
-      }
-      stmt.free()
-      return results
+      return stmt.all(...params) as T[]
     } catch (error) {
       log.error('Database query error:', error)
       return []
@@ -189,20 +168,31 @@ export class DatabaseService {
   run(sql: string, params: unknown[] = []): { changes: number } {
     if (!db) throw new Error('Database not initialized')
     try {
-      db.run(sql, params)
-      saveDatabase()
-      return { changes: db.getRowsModified() }
+      const stmt = db.prepare(sql)
+      const result = stmt.run(...params)
+      return { changes: result.changes }
     } catch (error) {
       log.error('Database run error:', error)
       throw error
     }
   }
 
+  get<T = unknown>(sql: string, params: unknown[] = []): T | undefined {
+    if (!db) throw new Error('Database not initialized')
+    try {
+      const stmt = db.prepare(sql)
+      return stmt.get(...params) as T | undefined
+    } catch (error) {
+      log.error('Database get error:', error)
+      return undefined
+    }
+  }
+
   close(): void {
     if (db) {
-      saveDatabase()
       db.close()
       db = null
+      log.info('Database closed')
     }
   }
 }
