@@ -234,6 +234,70 @@ export interface TimeData {
   cultivationPeriods: CultivationPeriod[]
 }
 
+export interface PowerLevel {
+  id: string
+  realm: string
+  stage: string
+  value: number
+  description: string
+  combatPower: number
+}
+
+export interface PowerScale {
+  levels: PowerLevel[]
+  baseMultiplier: number
+  realmMultiplier: Record<string, number>
+}
+
+export interface Battle {
+  id: string
+  name: string
+  chapter?: string
+  date: string
+  location: string
+  participants: BattleParticipant[]
+  result: 'win' | 'lose' | 'draw' | 'unknown'
+  description: string
+  powerDifference: number
+}
+
+export interface BattleParticipant {
+  characterId: string
+  side: 'attacker' | 'defender' | 'neutral'
+  realm: string
+  powerLevel: number
+  role: 'main' | 'support' | 'observer'
+  outcome: 'victory' | 'defeat' | 'injured' | 'fled' | 'died'
+}
+
+export interface PowerWarning {
+  id: string
+  type: 'inflation' | 'inconsistency' | 'impossible'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  message: string
+  details: string
+  relatedCharacters: string[]
+  suggestedFix?: string
+}
+
+export interface CrossRealmValidation {
+  id: string
+  battleId?: string
+  higherRealm: string
+  lowerRealm: string
+  powerDifference: number
+  isReasonable: boolean
+  reason: string
+  autoApproved: boolean
+}
+
+export interface CombatData {
+  powerScale: PowerScale
+  battleRecords: Battle[]
+  warnings: PowerWarning[]
+  validations: CrossRealmValidation[]
+}
+
 export interface GeographyData {
   regions: Region[]
   sects: Sect[]
