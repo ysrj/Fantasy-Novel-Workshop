@@ -548,3 +548,126 @@ export interface WorkerResponse {
   error?: string
   progress?: number
 }
+
+export interface FileVersion {
+  id: string
+  timestamp: number
+  hash: string
+  size: number
+  author?: string
+  comment?: string
+}
+
+export interface VersionedFile {
+  path: string
+  versions: FileVersion[]
+  currentVersion: string
+}
+
+export interface FileIndexEntry {
+  filePath: string
+  entities: {
+    characters: string[]
+    locations: string[]
+    items: string[]
+    techniques: string[]
+  }
+}
+
+export interface EntityFileReference {
+  entityType: 'character' | 'location' | 'item' | 'technique' | 'realm'
+  entityId: string
+  entityName: string
+  filePath: string
+  positions: { start: number; end: number }[]
+}
+
+export interface FileRelationship {
+  id: string
+  type: 'character-appears-in' | 'location-mentioned' | 'item-used' | 'technique-learned' | 'character-relation'
+  fromEntity: string
+  toEntity?: string
+  filePath: string
+  chapterId?: string
+}
+
+export interface CharacterTemplate {
+  id: string
+  name: string
+  description: string
+  role: 'protagonist' | 'antagonist' | 'supporting' | 'minor'
+  realm?: string
+  abilities?: string[]
+  background?: string
+  personality?: string
+  goals?: string[]
+  relationships?: { characterId: string; relationship: string }[]
+}
+
+export interface ChapterTemplate {
+  id: string
+  name: string
+  type: 'standard' | 'prologue' | 'epilogue' | 'interlude' | 'climax'
+  structure?: {
+    opening?: string
+    development?: string
+    climax?: string
+    conclusion?: string
+  }
+}
+
+export interface WorldTemplate {
+  category: 'realm' | 'technique' | 'item' | 'location' | 'faction'
+  name: string
+  description: string
+  attributes?: Record<string, string>
+}
+
+export interface TemplateSystem {
+  character: CharacterTemplate[]
+  chapter: ChapterTemplate[]
+  world: WorldTemplate[]
+  variables: {
+    projectName: string
+    author: string
+    date: string
+    customFields: Record<string, any>
+  }
+}
+
+export interface ProjectDirectory {
+  novel: {
+    chapters: string
+    volumes: string
+    draft: string
+  }
+  worldBuilding: {
+    cultivation: string
+    geography: string
+    factions: string
+  }
+  characters: {
+    main: string
+    supporting: string
+    relationships: string
+  }
+  plot: {
+    outline: string
+    timeline: string
+    plotlines: string
+  }
+  assets: {
+    images: string
+    references: string
+  }
+  meta: {
+    project: string
+    settings: string
+    tags: string
+    statistics: string
+  }
+  backups: {
+    auto: string
+    snapshots: string
+  }
+}

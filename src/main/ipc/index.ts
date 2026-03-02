@@ -15,6 +15,9 @@ import { TagService } from '../services/TagService'
 import { ReferenceService } from '../services/ReferenceService'
 import { PluginService } from '../services/PluginService'
 import { ErrorRecoveryService } from '../services/ErrorRecoveryService'
+import { VersionedFileService } from '../services/VersionedFileService'
+import { FileIndexService } from '../services/FileIndexService'
+import { TemplateService } from '../services/TemplateService'
 
 const store = new Store()
 let dbInitialized = false
@@ -34,6 +37,9 @@ const tagService = new TagService(databaseService)
 const referenceService = new ReferenceService(databaseService)
 const pluginService = new PluginService()
 const errorRecoveryService = new ErrorRecoveryService()
+const versionedFileService = new VersionedFileService()
+const fileIndexService = new FileIndexService()
+const templateService = new TemplateService()
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -366,6 +372,103 @@ export function setupIpcHandlers(): void {
 
   ipcMain.handle('errorRecovery:repair', async (_, projectPath, issues) => {
     await errorRecoveryService.repairProject(projectPath, issues)
+    return true
+  })
+
+  ipcMain.handle('version:save', async (_, projectId, filePath, content, comment) => {
+    return versionedFileService.saveWithVersion(projectId, filePath, content, comment)
+  })
+
+  ipcMain.handle('version:list', (_, projectId, filePath) => {
+    return versionedFileService.getVersions(projectId, filePath)
+  })
+
+  ipcMain.handle('version:getContent', (_, projectId, filePath, versionId) => {
+    return versionedFileService.getVersionContent(projectId, filePath, versionId)
+  })
+
+  ipcMain.handle('version:restore', (_, projectId, filePath, versionId) => {
+    return versionedFileService.restoreVersion(projectId, filePath, versionId)
+  })
+
+  ipcMain.handle('version:stats', (_, projectId) => {
+    return versionedFileService.getVersionStats(projectId)
+  })
+
+  ipcMain.handle('index:build', (_, projectId) => {
+    fileIndexService.buildIndex(projectId)
+    return true
+  })
+
+  ipcMain.handle('index:buildRelationships', (_, projectId, characters, locations) => {
+    fileIndexService.buildRelationships(projectId, characters, locations)
+    return true
+  })
+
+  ipcMain.handle('index:getFilesWithEntity', (_, projectId, entityName, entityType) => {
+    return fileIndexService.getFilesWithEntity(projectId, entityName, entityType)
+  })
+
+  ipcMain.handle('index:getEntityReferences', (_, projectId, entityType) => {
+    return fileIndexService.findEntityReferences(projectId, entityType)
+  })
+
+  ipcMain.handle('index:getEntityRelationships', (_, projectId, entityId) => {
+    return fileIndexService.getEntityRelationships(projectId, entityId)
+  })
+
+  ipcMain.handle('index:rebuildAll', (_, projectId, characters, locations) => {
+    fileIndexService.rebuildAllIndexes(projectId, characters, locations)
+    return true
+  })
+
+  ipcMain.handle('template:getCharacterTemplates', () => {
+    return templateService.getCharacterTemplates()
+  })
+
+  ipcMain.handle('template:getChapterTemplates', () => {
+    return templateService.getChapterTemplates()
+  })
+
+  ipcMain.handle('template:getWorldTemplates', () => {
+    return templateService.getWorldTemplates()
+  })
+
+  ipcMain.handle('template:addCharacter', (_, template) => {
+    return templateService.addCharacterTemplate(template)
+  })
+
+  ipcMain.handle('template:addChapter', (_, template) => {
+    return templateService.addChapterTemplate(template)
+  })
+
+  ipcMain.handle('template:updateCharacter', (_, id, updates) => {
+    return templateService.updateCharacterTemplate(id, updates)
+  })
+
+  ipcMain.handle('template:deleteCharacter', (_, id) => {
+    return templateService.deleteCharacterTemplate(id)
+  })
+
+  ipcMain.handle('template:generateCharacter', (_, templateId, data) => {
+    return templateService.generateCharacterFromTemplate(templateId, data)
+  })
+
+  ipcMain.handle('template:generateChapter', (_, templateId, data) => {
+    return templateService.generateChapterFromTemplate(templateId, data)
+  })
+
+  ipcMain.handle('template:setVariables', (_, variables) => {
+    templateService.setVariables(variables)
+    return true
+  })
+
+  ipcMain.handle('template:getVariables', () => {
+    return templateService.getVariables()
+  })
+
+  ipcMain.handle('template:reset', () => {
+    templateService.resetToDefaults()
     return true
   })
 }
