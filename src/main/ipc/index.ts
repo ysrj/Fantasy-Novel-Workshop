@@ -18,6 +18,8 @@ import { ErrorRecoveryService } from '../services/ErrorRecoveryService'
 import { VersionedFileService } from '../services/VersionedFileService'
 import { FileIndexService } from '../services/FileIndexService'
 import { TemplateService } from '../services/TemplateService'
+import { CombatService } from '../services/CombatService'
+import { TimelineService } from '../services/TimelineService'
 
 const store = new Store()
 let dbInitialized = false
@@ -40,6 +42,8 @@ const errorRecoveryService = new ErrorRecoveryService()
 const versionedFileService = new VersionedFileService()
 const fileIndexService = new FileIndexService()
 const templateService = new TemplateService()
+const combatService = new CombatService()
+const timelineService = new TimelineService()
 
 async function ensureDbInitialized(): Promise<void> {
   if (!dbInitialized) {
@@ -470,5 +474,65 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('template:reset', () => {
     templateService.resetToDefaults()
     return true
+  })
+
+  ipcMain.handle('combat:load', (_, projectId) => {
+    return combatService.loadCombatData(projectId)
+  })
+
+  ipcMain.handle('combat:save', (_, projectId, combatData) => {
+    combatService.saveCombatData(projectId, combatData)
+    return true
+  })
+
+  ipcMain.handle('combat:addPowerLevel', (_, projectId, powerLevel) => {
+    combatService.addPowerLevel(projectId, powerLevel)
+    return true
+  })
+
+  ipcMain.handle('combat:addBattle', (_, projectId, battle) => {
+    combatService.addBattleRecord(projectId, battle)
+    return true
+  })
+
+  ipcMain.handle('combat:validate', (_, projectId) => {
+    const data = combatService.loadCombatData(projectId)
+    return combatService.validateAllBattles(data.battleRecords, data.powerScale, data.powerScale.levels)
+  })
+
+  ipcMain.handle('timeline:load', (_, projectId) => {
+    return timelineService.loadTimeData(projectId)
+  })
+
+  ipcMain.handle('timeline:save', (_, projectId, timeData) => {
+    timelineService.saveTimeData(projectId, timeData)
+    return true
+  })
+
+  ipcMain.handle('timeline:addEra', (_, projectId, era) => {
+    timelineService.addEra(projectId, era)
+    return true
+  })
+
+  ipcMain.handle('timeline:addEvent', (_, projectId, event) => {
+    timelineService.addEvent(projectId, event)
+    return true
+  })
+
+  ipcMain.handle('timeline:addCharacterAge', (_, projectId, characterAge) => {
+    timelineService.addCharacterAge(projectId, characterAge)
+    return true
+  })
+
+  ipcMain.handle('timeline:getCharacterTimeline', (_, projectId, characterId) => {
+    return timelineService.getCharacterTimeline(projectId, characterId)
+  })
+
+  ipcMain.handle('timeline:checkChronology', (_, projectId) => {
+    return timelineService.checkChronology(projectId)
+  })
+
+  ipcMain.handle('timeline:summary', (_, projectId) => {
+    return timelineService.getTimelineSummary(projectId)
   })
 }
