@@ -1,0 +1,81 @@
+{
+  "characters": [
+    {
+      "id": "char-001",
+      "name": "林逸",
+      "nickname": "小瓶子",
+      "role": "protagonist",
+      "gender": "男",
+      "age": "18",
+      "realm": "筑基初期",
+      "appearance": "身材瘦削，面容清秀，双目有神",
+      "personality": "坚韧不拔，重情重义，心思细腻",
+      "background": "原本是世俗界的普通少年，因缘际会踏入修仙之路",
+      "abilities": "御剑术、火球术、青元剑诀",
+      "status": " alive"
+    },
+    {
+      "id": "char-002",
+      "name": "李化元",
+      "nickname": "李师叔",
+      "role": "mentor",
+      "gender": "男",
+      "age": "200",
+      "realm": "金丹后期",
+      "appearance": "仙风道骨，白发苍苍",
+      "personality": "慈祥护短，见多识广",
+      "background": "黄枫谷长老，林逸的启蒙师父",
+      "abilities": "癸水真经、大衍诀",
+      "status": "alive"
+    },
+    {
+      "id": "char-003",
+      "name": "韩立",
+      "nickname": "韩老魔",
+      "role": "rival",
+      "gender": "男",
+      "age": "20",
+      "realm": "筑基中期",
+      "appearance": "普通面容，不甚起眼",
+      "personality": "谨慎低调，城府极深",
+      "background": "主角同门师兄弟，后成为生死之敌",
+      "abilities": "青元剑诀、玄天宝盒",
+      "status": "alive"
+    },
+    {
+      "id": "char-004",
+      "name": "南宫婉",
+      "nickname": "婉儿",
+      "role": "love_interest",
+      "gender": "女",
+      "age": "30",
+      "realm": "金丹初期",
+      "appearance": "美貌绝伦，气质出尘",
+      "personality": "外冷内热，用情专一",
+      "background": "掩月宗弟子，与林逸有宿世因缘",
+      "abilities": "素女轮回功",
+      "status": "alive"
+    },
+    {
+      "id": "char-005",
+      "name": "向之礼",
+      "nickname": "向师叔",
+      "role": "supporting",
+      "gender": "男",
+      "age": "300",
+      "realm": "元婴期",
+      "appearance": "矮胖老者，笑眯眯",
+      "personality": "老奸巨滑，深藏不露",
+      "background": "天南第一高手，人界最强存在之一",
+      "abilities": "乾天功、诸多秘术",
+      "status": "alive"
+    }
+  ],
+  "relationships": [
+    { "sourceId": "char-001", "targetId": "char-002", "type": "师徒", "description": "修仙启蒙恩师" },
+    { "sourceId": "char-001", "targetId": "char-003", "type": "竞争对手", "description": "同门相争" },
+    { "sourceId": "char-001", "targetId": "char-004", "type": "道侣", "description": "修仙伴侣" },
+    { "sourceId": "char-001", "targetId": "char-005", "type": "忘年交", "description": "亦师亦友" },
+    { "sourceId": "char-002", "targetId": "char-003", "type": "师徒", "description": "同时教导" }
+  ]
+}

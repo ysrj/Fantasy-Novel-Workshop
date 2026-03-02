@@ -1,0 +1,12 @@
+{
+  "name": "凡人修仙传风格示例",
+  "description": "包含完整修炼体系、势力设定的东方玄幻世界观",
+  "characters": 15,
+  "chapters": 5,
+  "version": "1.0.0",
+  "author": "FNW Team",
+  "world": {
+    "style": "东方玄幻",
+    "focus": ["修炼体系", "宗门势力", "法宝丹药"]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "cultivation": {
+    "realms": [
+      { "id": "realm-1", "name": "炼气期", "order": 1, "description": "修仙入门，吸纳天地灵气", "color": "#8BC34A" },
+      { "id": "realm-2", "name": "筑基期", "order": 2, "description": "奠定仙基，凝结道种", "color": "#4CAF50" },
+      { "id": "realm-3", "name": "金丹期", "order": 3, "description": "结成金丹，寿元大增", "color": "#2196F3" },
+      { "id": "realm-4", "name": "元婴期", "order": 4, "description": "化婴儿出窍，神通大增", "color": "#9C27B0" },
+      { "id": "realm-5", "name": "化神期", "order": 5, "description": "化神返虚，人界巅峰", "color": "#FF5722" }
+    ],
+    "techniques": [
+      { "id": "tech-001", "name": "青元剑诀", "realm": "炼气期", "description": "基础剑诀，攻击力强", "type": "攻击" },
+      { "id": "tech-002", "name": "癸水真经", "realm": "筑基期", "description": "水系功法，持久续航", "type": "防御" },
+      { "id": "tech-003", "name": "大衍诀", "realm": "金丹期", "description": "修炼神识，秘术基础", "type": "辅助" },
+      { "id": "tech-004", "name": "乾天功", "realm": "元婴期", "description": "天阶功法，威能无穷", "type": "攻击" },
+      { "id": "tech-005", "name": "玄天宝盒秘术", "realm": "化神期", "description": "通天灵宝配套秘法", "type": "终极" }
+    ]
+  },
+  "geography": {
+    "locations": [
+      { "id": "loc-001", "name": "黄枫谷", "type": "sect", "description": "主角所在宗门，位于越国", "parentId": null },
+      { "id": "loc-002", "name": "掩月宗", "type": "sect", "description": "越国大宗，女修门派", "parentId": null },
+      { "id": "loc-003", "name": "血色禁地", "type": "danger", "description": "上古遗迹，危机四伏", "parentId": null },
+      { "id": "loc-004", "name": "天南", "type": "region", "description": "修仙界疆域", "parentId": null }
+    ]
+  },
+  "factions": [
+    { "id": "faction-001", "name": "黄枫谷", "type": "sect", "description": "越国七派之一", "leader": "李化元", "members": ["林逸", "韩立"] },
+    { "id": "faction-002", "name": "掩月宗", "type": "sect", "description": "越国七派之首", "leader": "未知", "members": ["南宫婉"] },
+    { "id": "faction-003", "name": "魔道", "type": "enemy", "description": "正道之敌", "leader": "unknown", "members": [] }
+  ]
+}
