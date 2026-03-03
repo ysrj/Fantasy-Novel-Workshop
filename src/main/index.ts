@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log from 'electron-log'
 import { setupIpcHandlers } from './ipc'
+import { container } from './di/ServiceContainer'
 
 log.transports.file.level = 'info'
 log.transports.console.level = 'debug'
@@ -51,7 +52,7 @@ function createWindow(): void {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   log.info('App ready')
 
   electronApp.setAppUserModelId('com.fnw.fantasynovelworkshop')
@@ -60,6 +61,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  await container.initialize()
   setupIpcHandlers()
   createWindow()
 
