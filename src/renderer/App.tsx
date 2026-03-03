@@ -12,6 +12,9 @@ import InspirationManager from './views/Inspiration/InspirationManager'
 import AIAssistant from './views/AIAssistant/AIAssistant'
 import AICreator from './views/AICreator/AICreator'
 import TagManager from './views/TagManager/TagManager'
+import KnowledgeBase from './views/KnowledgeBase/KnowledgeBase'
+import DraftEditor from './views/DraftEditor/DraftEditor'
+import PublishPage from './views/PublishPage/PublishPage'
 import { useProjectStore } from './stores/projectStore'
 
 function App(): JSX.Element {
@@ -35,6 +38,9 @@ function App(): JSX.Element {
         <Route path="ai-creator" element={<AICreator />} />
         <Route path="analysis" element={<Analysis />} />
         <Route path="stats" element={<Stats />} />
+        <Route path="knowledge-base" element={<KnowledgeBase />} />
+        <Route path="drafts" element={<DraftEditor />} />
+        <Route path="publish" element={<PublishPage />} />
       </Route>
       <Route path="/settings" element={<Settings />} />
     </Routes>

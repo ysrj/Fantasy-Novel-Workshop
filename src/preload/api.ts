@@ -240,6 +240,50 @@ export interface TimelineAPI {
   'timeline:summary': (projectId: string) => Promise<unknown>
 }
 
-export type IPCChannels = ProjectAPI & SettingsAPI & DialogAPI & OutlineAPI & CharacterAPI & WorldAPI & WritingAPI & StatsAPI & AIAPI & MaterialAPI & InspirationAPI & ExportAPI & DatabaseAPI & BackupAPI & TagAPI & ReferenceAPI & PluginAPI & ErrorRecoveryAPI & VersionAPI & FileIndexAPI & TemplateAPI & CombatAPI & TimelineAPI
+export interface KnowledgeBaseAPI {
+  'kb:createCollection': (data: { projectId: string; name: string; description: string; type: string; parentId?: string }) => Promise<unknown>
+  'kb:listCollections': (projectId: string) => Promise<unknown[]>
+  'kb:updateCollection': (data: { collectionId: string; name?: string; description?: string; type?: string }) => Promise<void>
+  'kb:deleteCollection': (collectionId: string) => Promise<void>
+  'kb:createEntry': (data: { collectionId: string; title: string; content: string; tags: string[] }) => Promise<unknown>
+  'kb:getEntries': (collectionId: string) => Promise<unknown[]>
+  'kb:getEntry': (entryId: string) => Promise<unknown | null>
+  'kb:updateEntry': (data: { entryId: string; title?: string; content?: string; tags?: string[] }) => Promise<void>
+  'kb:deleteEntry': (entryId: string) => Promise<void>
+  'kb:search': (data: { projectId: string; keyword: string }) => Promise<unknown[]>
+  'kb:semanticSearch': (data: { projectId: string; query: string; limit?: number }) => Promise<unknown[]>
+  'kb:importMarkdown': (data: { projectId: string; collectionId: string; folderPath: string }) => Promise<unknown[]>
+  'kb:exportMarkdown': (data: { collectionId: string; folderPath: string }) => Promise<void>
+  'kb:getExternalConfig': () => Promise<unknown | null>
+  'kb:setExternalConfig': (config: unknown) => Promise<void>
+  'kb:testExternalConnection': () => Promise<boolean>
+}
+
+export interface PublishAPI {
+  'draft:save': (data: { projectId: string; chapterId: string; content: string; title?: string }) => Promise<unknown>
+  'draft:get': (data: { projectId: string; chapterId: string }) => Promise<unknown | null>
+  'draft:list': (projectId: string) => Promise<unknown[]>
+  'draft:delete': (data: { projectId: string; chapterId: string }) => Promise<void>
+  'publish:generate': (data: { draftId: string; settings: unknown }) => Promise<unknown>
+  'publish:list': (projectId: string) => Promise<unknown[]>
+  'publish:get': (publishedId: string) => Promise<unknown | null>
+  'publish:compare': (publishedId: string) => Promise<unknown>
+  'publish:download': (data: { publishedId: string; platform: string }) => Promise<{ content: string; filename: string }>
+  'publish:platforms': () => Promise<unknown[]>
+}
+
+export interface RuleAPI {
+  'rule:list': () => Promise<unknown[]>
+  'rule:listByCategory': (category: string) => Promise<unknown[]>
+  'rule:enable': (ruleId: string) => Promise<void>
+  'rule:disable': (ruleId: string) => Promise<void>
+  'rule:validate': (context: unknown) => Promise<unknown[]>
+  'rule:validateCombat': (context: unknown) => Promise<unknown[]>
+  'rule:validateWriting': (context: unknown) => Promise<unknown[]>
+  'rule:validateTimeline': (context: unknown) => Promise<unknown[]>
+  'rule:validateContent': (data: { projectId: string; content: string }) => Promise<unknown[]>
+}
+
+export type IPCChannels = ProjectAPI & SettingsAPI & DialogAPI & OutlineAPI & CharacterAPI & WorldAPI & WritingAPI & StatsAPI & AIAPI & MaterialAPI & InspirationAPI & ExportAPI & DatabaseAPI & BackupAPI & TagAPI & ReferenceAPI & PluginAPI & ErrorRecoveryAPI & VersionAPI & FileIndexAPI & TemplateAPI & CombatAPI & TimelineAPI & KnowledgeBaseAPI & PublishAPI & RuleAPI
 
 export type IPCChannel = keyof IPCChannels
