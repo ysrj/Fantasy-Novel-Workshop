@@ -1,15 +1,11 @@
 import type { ChapterData } from '../../shared/types'
 
-export interface ChapterBasic {
-  id: string
-  title: string
-  content?: string
-  wordCount?: number
+export interface ChapterBasic extends ChapterData {
 }
 
 export const writingApi = {
   listChapters: (projectId: string) => 
-    window.api.invoke<ChapterBasic[]>('writing:listChapters', projectId),
+    window.api.invoke<ChapterData[]>('writing:listChapters', projectId),
   
   getChapter: (projectId: string, chapterId: string) => 
     window.api.invoke<string>('writing:getChapter', projectId, chapterId),

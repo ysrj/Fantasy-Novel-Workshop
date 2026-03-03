@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm'
 import { useEditorStore } from '../../stores/editorStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import TipTapEditor from '../../components/RichEditor/TipTapEditor'
+import { writingApi, characterApi } from '../../api'
 
 interface Chapter {
   id: string
@@ -61,18 +62,8 @@ function WritingEditor(): JSX.Element {
   const loadChapters = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const [chapterData, worldData, charData] = await Promise.all([
-        window.api.invoke<Chapter[]>('writing:listChapters', projectId),
-        window.api.invoke<any>('world:load', projectId),
-        window.api.invoke<EntityOption[]>('character:list', projectId)
-      ])
+      const chapterData = await writingApi.listChapters(projectId) as unknown as Chapter[]
       setChapters(chapterData)
-      setCharacters(charData || [])
-      if (worldData) {
-        setLocations((worldData.geography?.locations || []).map((l: any) => ({ id: l.id, name: l.name })))
-        setRealms((worldData.cultivation?.realms || []).map((r: any) => ({ id: r.id, name: r.name })))
-        setTechniques((worldData.cultivation?.techniques || []).map((t: any) => ({ id: t.id, name: t.name })))
-      }
     } catch (error) {
       message.error('加载数据失败')
     }
@@ -83,7 +74,7 @@ function WritingEditor(): JSX.Element {
     
     setSaving(true)
     try {
-      await window.api.invoke('writing:saveChapter', projectId, currentChapterId, content)
+      await writingApi.saveChapter(projectId, currentChapterId, content)
       setInitialContent(content)
       setDirty(false)
       setLastSaved(new Date().toLocaleTimeString())
@@ -104,7 +95,7 @@ function WritingEditor(): JSX.Element {
     }
     
     try {
-      const chapterContent = await window.api.invoke<string>('writing:getChapter', projectId, chapterId)
+      const chapterContent = await writingApi.getChapter(projectId, chapterId)
       setCurrentChapter(chapterId)
       setContent(chapterContent || '')
       setInitialContent(chapterContent || '')
@@ -119,7 +110,7 @@ function WritingEditor(): JSX.Element {
     if (!projectId || !currentChapterId) return
     setSaving(true)
     try {
-      await window.api.invoke('writing:saveChapter', projectId, currentChapterId, content)
+      await writingApi.saveChapter(projectId, currentChapterId, content)
       setInitialContent(content)
       setDirty(false)
       setLastSaved(new Date().toLocaleTimeString())
@@ -155,7 +146,7 @@ function WritingEditor(): JSX.Element {
   const createChapter = async (): Promise<void> => {
     if (!projectId || !newChapterTitle.trim()) return
     try {
-      const newChapter = await window.api.invoke<Chapter>('writing:createChapter', projectId, newChapterTitle)
+      const newChapter = await writingApi.createChapter(projectId, newChapterTitle) as unknown as Chapter
       setChapters([...chapters, newChapter])
       setIsModalVisible(false)
       setNewChapterTitle('')
@@ -174,7 +165,7 @@ function WritingEditor(): JSX.Element {
       content: '确定要删除这个章节吗？',
       onOk: async () => {
         try {
-          await window.api.invoke('writing:deleteChapter', projectId, chapterId)
+          await writingApi.deleteChapter(projectId, chapterId)
           setChapters(chapters.filter((c) => c.id !== chapterId))
           if (currentChapterId === chapterId) {
             setCurrentChapter(null)

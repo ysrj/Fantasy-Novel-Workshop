@@ -3,34 +3,13 @@ import { useParams } from 'react-router-dom'
 import { Card, Statistic, Row, Col, Progress, message, InputNumber, Button, Space, Modal, Input } from 'antd'
 import { ReadOutlined, EditOutlined, ClockCircleOutlined, TrophyOutlined, PlayCircleOutlined, PauseCircleOutlined, SettingOutlined } from '@ant-design/icons'
 import { Line, Column } from '@ant-design/charts'
+import { goalApi, pomodoroApi, type WritingGoal, type PomodoroStats, type WritingSpeed } from '../../api'
 
 interface StatsData {
   totalWordCount: number
   chapterWordCounts: Record<string, number>
   dailyProgress: { date: string; wordCount: number }[]
   targetWordCount: number
-}
-
-interface WritingGoal {
-  id: string
-  projectId: string
-  date: string
-  targetWords: number
-  actualWords: number
-  pomodoroSessions: number
-  totalWritingTime: number
-}
-
-interface PomodoroStats {
-  date: string
-  sessions: number
-  words: number
-}
-
-interface WritingSpeed {
-  date: string
-  wordsPerMinute: number
-  sessionCount: number
 }
 
 function Stats(): JSX.Element {
@@ -74,7 +53,7 @@ function Stats(): JSX.Element {
     if (!projectId) return
     const today = new Date().toISOString().split('T')[0]
     try {
-      const data = await window.api.invoke<WritingGoal | null>('goal:get', projectId, today)
+      const data = await goalApi.get(projectId, today)
       setGoal(data)
       if (data?.targetWords) setTargetWords(data.targetWords)
     } catch (error) {
@@ -85,7 +64,7 @@ function Stats(): JSX.Element {
   const loadPomodoroStats = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<PomodoroStats[]>('pomodoro:stats', projectId, 7)
+      const data = await pomodoroApi.stats(projectId, 7)
       setPomodoroStats(data)
     } catch (error) {
       console.error('加载番茄钟统计失败', error)
@@ -95,7 +74,7 @@ function Stats(): JSX.Element {
   const loadSpeedData = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<WritingSpeed[]>('pomodoro:speed', projectId, 7)
+      const data = await pomodoroApi.speed(projectId, 7)
       setSpeedData(data)
     } catch (error) {
       console.error('加载写作速度失败', error)
@@ -106,7 +85,7 @@ function Stats(): JSX.Element {
     if (!projectId) return
     const today = new Date().toISOString().split('T')[0]
     try {
-      await window.api.invoke('goal:set', projectId, today, targetWords)
+      await goalApi.set(projectId, today, targetWords)
       message.success('目标已设置')
       loadGoal()
       setIsGoalModalVisible(false)
@@ -144,7 +123,7 @@ function Stats(): JSX.Element {
     const wordsWritten = (stats?.totalWordCount || 0) - wordsAtStart
     
     try {
-      await window.api.invoke('pomodoro:add', projectId, sessionStartTime, endTime, wordsWritten)
+      await pomodoroApi.add(projectId, sessionStartTime, endTime, wordsWritten)
       message.success('番茄钟完成！')
       loadPomodoroStats()
       loadSpeedData()

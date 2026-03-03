@@ -156,6 +156,128 @@ const migrations: Migration[] = [
       db.exec('DROP TABLE IF EXISTS plot_lines')
       log.info('[Migration] v4: Tables dropped')
     }
+  },
+  {
+    version: 5,
+    description: 'Add knowledge base tables',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS kb_collections (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          type TEXT DEFAULT 'custom',
+          parent_id TEXT,
+          entry_count INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+      
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS kb_entries (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          collection_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          summary TEXT,
+          tags TEXT DEFAULT '[]',
+          metadata TEXT DEFAULT '{}',
+          source_type TEXT DEFAULT 'manual',
+          embedding TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (collection_id) REFERENCES kb_collections(id)
+        )
+      `)
+      
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS kb_external_configs (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          endpoint TEXT NOT NULL,
+          api_key TEXT,
+          model TEXT,
+          enabled INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+      
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_kb_entries_project ON kb_entries(project_id)`)
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_kb_entries_collection ON kb_entries(collection_id)`)
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_kb_collections_project ON kb_collections(project_id)`)
+      
+      log.info('[Migration] v5: Knowledge base tables created')
+    },
+    down: (db) => {
+      db.exec('DROP TABLE IF EXISTS kb_entries')
+      db.exec('DROP TABLE IF EXISTS kb_collections')
+      db.exec('DROP TABLE IF EXISTS kb_external_configs')
+      log.info('[Migration] v5: Tables dropped')
+    }
+  },
+  {
+    version: 6,
+    description: 'Add drafts and published chapters tables',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drafts (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          chapter_id TEXT NOT NULL,
+          title TEXT DEFAULT '',
+          content TEXT NOT NULL,
+          word_count INTEGER DEFAULT 0,
+          status TEXT DEFAULT 'editing',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(project_id, chapter_id)
+        )
+      `)
+      
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS draft_edits (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          chapter_id TEXT NOT NULL,
+          draft_id TEXT NOT NULL,
+          timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+          edit_type TEXT DEFAULT 'manual',
+          content TEXT NOT NULL,
+          changes_summary TEXT
+        )
+      `)
+      
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS published_chapters (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          draft_id TEXT NOT NULL,
+          chapter_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          platform_format TEXT,
+          rewrite_settings TEXT,
+          similarity REAL DEFAULT 100,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          published_at TEXT
+        )
+      `)
+      
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_drafts_project ON drafts(project_id)`)
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_draft_edits_project ON draft_edits(project_id)`)
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_published_project ON published_chapters(project_id)`)
+      
+      log.info('[Migration] v6: Draft and published chapters tables created')
+    },
+    down: (db) => {
+      db.exec('DROP TABLE IF EXISTS drafts')
+      db.exec('DROP TABLE IF EXISTS draft_edits')
+      db.exec('DROP TABLE IF EXISTS published_chapters')
+      log.info('[Migration] v6: Tables dropped')
+    }
   }
 ]
 

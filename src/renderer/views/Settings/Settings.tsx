@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Form, Input, Select, Button, message, Space, List, Popconfirm, Tag } from 'antd'
 import { SaveOutlined, FolderOutlined, RollbackOutlined, UndoOutlined, CloudUploadOutlined, FileZipOutlined, DeleteOutlined, RestOutlined } from '@ant-design/icons'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { dialogApi, settingsApi } from '../../api'
 
 interface BackupInfo {
   name: string
@@ -63,7 +64,7 @@ function Settings(): JSX.Element {
 
   const handleSelectFolder = async (): Promise<void> => {
     try {
-      const path = await window.api.invoke<string | null>('dialog:selectFolder')
+      const path = await dialogApi.selectFolder()
       if (path) {
         setDataPath(path)
         setHasChanges(true)
@@ -85,16 +86,16 @@ function Settings(): JSX.Element {
       setAiModel(values.aiModel)
       setCustomDataPath(dataPath)
 
-      await window.api.invoke('settings:set', 'language', values.language)
-      await window.api.invoke('settings:set', 'theme', values.theme)
-      await window.api.invoke('settings:set', 'autoSaveInterval', values.autoSaveInterval)
-      await window.api.invoke('settings:set', 'fontSize', values.fontSize)
-      await window.api.invoke('settings:set', 'font', values.font)
-      await window.api.invoke('settings:set', 'ollamaAddress', values.ollamaAddress)
-      await window.api.invoke('settings:set', 'aiModel', values.aiModel)
+      await settingsApi.set('language', values.language)
+      await settingsApi.set('theme', values.theme)
+      await settingsApi.set('autoSaveInterval', values.autoSaveInterval)
+      await settingsApi.set('fontSize', values.fontSize)
+      await settingsApi.set('font', values.font)
+      await settingsApi.set('ollamaAddress', values.ollamaAddress)
+      await settingsApi.set('aiModel', values.aiModel)
       
       if (dataPath) {
-        await window.api.invoke('settings:setCustomDataPath', dataPath)
+        await settingsApi.setCustomDataPath(dataPath)
       }
 
       setInitialValues({ ...values, customDataPath: dataPath })

@@ -3,16 +3,10 @@ import { useParams } from 'react-router-dom'
 import { Tree, Button, Modal, Form, Input, Select, ColorPicker, Space, message, Tag, Card, Empty } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, TagsOutlined } from '@ant-design/icons'
 import { useTagStore } from '../../stores/tagStore'
+import { tagApi } from '../../api'
+import type { Tag as TagType } from '../../../shared/types'
 
-interface Tag {
-  id: string
-  projectId: string
-  name: string
-  parentId: string | null
-  color: string
-  description: string
-  type: 'character' | 'world' | 'inspiration' | 'chapter' | 'custom'
-}
+type Tag = TagType
 
 function TagManager(): JSX.Element {
   const { projectId } = useParams()
@@ -30,7 +24,7 @@ function TagManager(): JSX.Element {
   const loadTags = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<Tag[]>('tag:list', projectId)
+      const data = await tagApi.list(projectId)
       setTags(data)
     } catch (error) {
       message.error('加载标签失败')
@@ -75,10 +69,10 @@ function TagManager(): JSX.Element {
     const values = await form.validateFields()
     try {
       if (editingTag) {
-        await window.api.invoke('tag:update', editingTag.id, values.name, values.parentId, values.color, values.description)
+        await tagApi.update(editingTag.id, values.name, values.parentId, values.color, values.description)
         message.success('标签已更新')
       } else {
-        await window.api.invoke('tag:add', projectId, values.name, values.parentId, values.color, values.description, values.type)
+        await tagApi.add(projectId, values.name, values.parentId, values.color, values.description, values.type)
         message.success('标签已添加')
       }
       setIsModalVisible(false)
@@ -94,7 +88,7 @@ function TagManager(): JSX.Element {
       content: '确定要删除这个标签吗？',
       onOk: async () => {
         try {
-          await window.api.invoke('tag:delete', id)
+          await tagApi.delete(id)
           message.success('标签已删除')
           loadTags()
         } catch (error) {

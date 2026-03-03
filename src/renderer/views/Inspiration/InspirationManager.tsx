@@ -2,14 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Input, Button, List, Modal, Form, Tag, Space, message, Empty } from 'antd'
 import { PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined, BulbOutlined } from '@ant-design/icons'
-
-interface Inspiration {
-  id: number
-  projectId: string
-  content: string
-  tags: string[]
-  createdAt: string
-}
+import { inspirationApi, type Inspiration } from '../../api'
 
 function InspirationManager(): JSX.Element {
   const { projectId } = useParams()
@@ -30,7 +23,7 @@ function InspirationManager(): JSX.Element {
     if (!projectId) return
     setLoading(true)
     try {
-      const data = await window.api.invoke<Inspiration[]>('inspiration:list', projectId)
+      const data = await inspirationApi.list(projectId)
       setInspirations(data)
     } catch (error) {
       message.error('加载灵感失败')
@@ -61,10 +54,10 @@ function InspirationManager(): JSX.Element {
 
     try {
       if (editingInspiration) {
-        await window.api.invoke('inspiration:update', editingInspiration.id, values.content, tags)
+        await inspirationApi.update(editingInspiration.id, values.content, tags)
         message.success('灵感已更新')
       } else {
-        await window.api.invoke('inspiration:add', projectId, values.content, tags)
+        await inspirationApi.add(projectId, values.content, tags)
         message.success('灵感已添加')
       }
       setIsModalVisible(false)
@@ -80,7 +73,7 @@ function InspirationManager(): JSX.Element {
       content: '确定要删除这条灵感吗？',
       onOk: async () => {
         try {
-          await window.api.invoke('inspiration:delete', id)
+          await inspirationApi.delete(id)
           message.success('灵感已删除')
           loadInspirations()
         } catch (error) {
@@ -96,7 +89,7 @@ function InspirationManager(): JSX.Element {
       return
     }
     try {
-      const results = await window.api.invoke<Inspiration[]>('inspiration:search', projectId, searchKeyword)
+      const results = await inspirationApi.search(projectId, searchKeyword)
       setInspirations(results)
     } catch (error) {
       message.error('搜索失败')

@@ -4,14 +4,7 @@ import { Button, Card, Input, Modal, Form, message } from 'antd'
 import { PlusOutlined, DeleteOutlined, BookOutlined, FolderOutlined } from '@ant-design/icons'
 import { useProjectStore, Project } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
-
-declare global {
-  interface Window {
-    api: {
-      invoke: <T = unknown>(channel: string, ...args: unknown[]) => Promise<T>
-    }
-  }
-}
+import { projectApi, dialogApi, settingsApi } from '../../api'
 
 function ProjectList(): JSX.Element {
   const navigate = useNavigate()
@@ -31,7 +24,7 @@ function ProjectList(): JSX.Element {
   const loadProjects = async (): Promise<void> => {
     setLoading(true)
     try {
-      const projectList = await window.api.invoke<Project[]>('project:list')
+      const projectList = await projectApi.list()
       setProjects(projectList)
     } catch (error) {
       message.error(t.error || 'Error')
@@ -42,7 +35,7 @@ function ProjectList(): JSX.Element {
 
   const handleSelectPath = async (): Promise<void> => {
     try {
-      const path = await window.api.invoke<string | null>('dialog:selectFolder')
+      const path = await dialogApi.selectFolder()
       if (path) {
         setCustomPath(path)
       }
@@ -54,10 +47,10 @@ function ProjectList(): JSX.Element {
   const handleCreate = async (values: { title: string; description: string; targetWordCount: number }): Promise<void> => {
     try {
       if (customPath) {
-        await window.api.invoke('settings:setCustomDataPath', customPath)
+        await settingsApi.setCustomDataPath(customPath)
       }
       
-      const newProject = await window.api.invoke<Project>('project:create', {
+      const newProject = await projectApi.create({
         title: values.title,
         description: values.description,
         targetWordCount: values.targetWordCount || 100000,
@@ -82,7 +75,7 @@ function ProjectList(): JSX.Element {
       cancelText: t.cancel || 'Cancel',
       onOk: async () => {
         try {
-          await window.api.invoke('project:delete', projectId)
+          await projectApi.delete(projectId)
           removeProject(projectId)
           message.success(t.success || 'Success')
         } catch (error) {

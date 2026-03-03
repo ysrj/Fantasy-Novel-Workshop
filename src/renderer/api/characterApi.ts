@@ -2,7 +2,7 @@ export interface Character {
   id: string
   projectId: string
   name: string
-  description: string
+  description?: string
   [key: string]: unknown
 }
 

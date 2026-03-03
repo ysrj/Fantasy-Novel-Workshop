@@ -2,21 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Button, Space, Spin, message, Alert, Select, Divider, List, Modal, Form, Input, Popconfirm } from 'antd'
 import { RobotOutlined, CheckCircleOutlined, WarningOutlined, InfoCircleOutlined, ThunderboltOutlined, EditOutlined, ExpandOutlined, CompressOutlined, PlusOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons'
-
-interface AICheckResult {
-  type: string
-  severity: 'info' | 'warning' | 'error'
-  message: string
-  location?: string
-}
-
-interface CustomPrompt {
-  id: string
-  projectId: string
-  name: string
-  prompt: string
-  created_at: string
-}
+import { aiApi, type AICheckResult, type CustomPrompt } from '../../api'
 
 function AIAssistant(): JSX.Element {
   const { projectId } = useParams()
@@ -44,7 +30,7 @@ function AIAssistant(): JSX.Element {
   const checkAIStatus = async (): Promise<void> => {
     setChecking(true)
     try {
-      const available = await window.api.invoke<boolean>('ai:checkStatus')
+      const available = await aiApi.checkStatus()
       setAiAvailable(available)
     } catch (error) {
       setAiAvailable(false)
@@ -56,7 +42,7 @@ function AIAssistant(): JSX.Element {
   const loadCustomPrompts = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const prompts = await window.api.invoke<CustomPrompt[]>('ai:listPrompts', projectId)
+      const prompts = await aiApi.listPrompts(projectId)
       setCustomPrompts(prompts || [])
     } catch (error) {
       console.error('加载自定义提示失败', error)
@@ -68,7 +54,7 @@ function AIAssistant(): JSX.Element {
     setCheckingConsistency(true)
     setCheckResults([])
     try {
-      const results = await window.api.invoke<AICheckResult[]>('ai:checkConsistency', projectId)
+      const results = await aiApi.checkConsistency(projectId!)
       setCheckResults(results)
       if (results.length === 0) {
         message.success('一致性检查完成，未发现问题')
@@ -85,7 +71,7 @@ function AIAssistant(): JSX.Element {
     setEnhancedContent('')
     try {
       const demoContent = '# 示例章节\n\n主角叶凡站在山巅，望着远处的云海，心中豪情万丈...\n\n这是第一章的内容，展示主角的胸怀和志向。'
-      const result = await window.api.invoke<string | null>('ai:enhanceWriting', demoContent, enhanceType)
+      const result = await aiApi.enhanceWriting(demoContent, enhanceType)
       if (result) {
         setEnhancedContent(result)
         message.success('内容优化完成')
@@ -115,7 +101,7 @@ function AIAssistant(): JSX.Element {
     if (!projectId) return
     const values = await promptForm.validateFields()
     try {
-      await window.api.invoke('ai:savePrompt', projectId, editingPrompt?.id || null, values.name, values.prompt)
+      await aiApi.savePrompt(projectId, editingPrompt?.id || null, values.name, values.prompt)
       message.success(editingPrompt ? '提示词已更新' : '提示词已添加')
       setIsPromptModalVisible(false)
       loadCustomPrompts()
@@ -126,7 +112,7 @@ function AIAssistant(): JSX.Element {
 
   const handleDeletePrompt = async (id: string): Promise<void> => {
     try {
-      await window.api.invoke('ai:deletePrompt', id)
+      await aiApi.deletePrompt(id)
       message.success('提示词已删除')
       loadCustomPrompts()
     } catch (error) {
@@ -138,7 +124,7 @@ function AIAssistant(): JSX.Element {
     setCustomPromptLoading(true)
     setCustomResult('')
     try {
-      const result = await window.api.invoke<string>('ai:generate', prompt.prompt, 'llama2')
+      const result = await aiApi.generate(prompt.prompt, 'llama2')
       if (result) {
         setCustomResult(result)
         message.success('生成完成')

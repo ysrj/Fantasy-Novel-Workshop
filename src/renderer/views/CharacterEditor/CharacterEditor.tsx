@@ -5,6 +5,7 @@ import { PlusOutlined, SaveOutlined, RollbackOutlined, UndoOutlined, ApiOutlined
 import { useProjectStore } from '../../stores/projectStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import NovelRelationshipGraph from '../../components/RelationshipGraph/NovelRelationshipGraph'
+import { characterApi } from '../../api'
 
 interface Character {
   id: string
@@ -53,7 +54,7 @@ function CharacterEditor(): JSX.Element {
   const loadCharacters = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<Character[]>('character:list', projectId)
+      const data = await characterApi.list(projectId) as unknown as Character[]
       setCharacters(data)
       setInitialCharacters(JSON.parse(JSON.stringify(data)))
     } catch (error) {
@@ -64,7 +65,7 @@ function CharacterEditor(): JSX.Element {
   const loadRelationships = async (): Promise<void> => {
     if (!projectId) return
     try {
-      const data = await window.api.invoke<any[]>('character:relationships', projectId)
+      const data = await characterApi.getRelationships(projectId) as unknown as Relationship[]
       setRelationships(data || [])
     } catch (error) {
       console.error('加载关系失败', error)
@@ -78,8 +79,8 @@ function CharacterEditor(): JSX.Element {
   const saveCharacters = async (): Promise<void> => {
     if (!projectId) return
     try {
-      await window.api.invoke('character:save', projectId, characters)
-      await window.api.invoke('character:saveRelationships', projectId, relationships)
+      await characterApi.save(projectId, characters)
+      await characterApi.saveRelationships(projectId, relationships)
       setInitialCharacters(JSON.parse(JSON.stringify(characters)))
       setHasChanges(false)
       message.success('角色已保存')
