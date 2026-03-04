@@ -182,7 +182,7 @@ const DEFAULT_WORLD_TEMPLATES: WorldTemplate[] = [
 ]
 
 export class TemplateService {
-  private templates: TemplateSystem = {
+  private templates: TemplateSystem = JSON.parse(JSON.stringify({
     character: DEFAULT_CHARACTER_TEMPLATES,
     chapter: DEFAULT_CHAPTER_TEMPLATES,
     world: DEFAULT_WORLD_TEMPLATES,
@@ -192,7 +192,7 @@ export class TemplateService {
       date: new Date().toISOString().split('T')[0],
       customFields: {}
     }
-  }
+  }))
 
   constructor() {
     this.loadTemplates()
@@ -333,7 +333,7 @@ export class TemplateService {
   }
 
   resetToDefaults(): void {
-    this.templates = {
+    this.templates = JSON.parse(JSON.stringify({
       character: DEFAULT_CHARACTER_TEMPLATES,
       chapter: DEFAULT_CHAPTER_TEMPLATES,
       world: DEFAULT_WORLD_TEMPLATES,
@@ -343,7 +343,7 @@ export class TemplateService {
         date: new Date().toISOString().split('T')[0],
         customFields: {}
       }
-    }
+    }))
     this.saveTemplates()
     log.info('Templates reset to defaults')
   }
