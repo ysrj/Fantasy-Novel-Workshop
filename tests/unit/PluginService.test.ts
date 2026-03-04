@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, jest } from '@jestest/globals'
+import { describe, test, expect, beforeEach } from '@jest/globals'
 import { PluginService } from '../../src/main/services/PluginService'
 
 jest.mock('electron-log', () => ({

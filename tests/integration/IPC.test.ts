@@ -1,4 +1,4 @@
-import { describe, test, expect, jest, beforeEach, afterEach } from '@jestest/globals'
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals'
 
 jest.mock('electron', () => ({
   ipcMain: {

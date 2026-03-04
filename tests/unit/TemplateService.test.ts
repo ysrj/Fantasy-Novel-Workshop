@@ -1,5 +1,4 @@
-import { describe, test, expect, beforeEach, jest } from '@jestest/globals'
-import { TemplateService } from '../../src/main/services/TemplateService'
+import { describe, test, expect, beforeEach } from '@jest/globals'
 
 jest.mock('electron-store', () => {
   return jest.fn().mockImplementation(() => ({
@@ -8,6 +7,8 @@ jest.mock('electron-store', () => {
     store: {}
   }))
 })
+
+import { TemplateService } from '../../src/main/services/TemplateService'
 
 jest.mock('electron-log', () => ({
   info: jest.fn(),

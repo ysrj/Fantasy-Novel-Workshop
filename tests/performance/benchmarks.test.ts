@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll } from '@jestest/globals'
+import { describe, test, expect, beforeAll } from '@jest/globals'
 
 function generateTestData(characterCount: number, relationshipCount: number) {
   const characters = []

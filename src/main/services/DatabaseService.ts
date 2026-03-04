@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'fs'
 import Database from 'better-sqlite3'
 import log from 'electron-log'
 import { DatabaseMigrator } from '../database/DatabaseMigrator'
+import { migrateLegacyFromUserData } from '../database/legacyMigrator'
 
 let db: Database.Database | null = null
 let migrator: DatabaseMigrator | null = null
@@ -21,6 +22,10 @@ function initDatabase(): void {
   
   migrator = new DatabaseMigrator(db)
   migrator.migrate()
+  // 兼容迁移：检查用户目录下可能的旧导出并尝试迁移到当前 sqlite 数据库
+  migrateLegacyFromUserData(db).catch((err) => {
+    log.error('Legacy migration encountered an error:', err)
+  })
   
   log.info('Database initialized:', DB_PATH)
 }

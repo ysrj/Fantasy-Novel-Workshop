@@ -14,6 +14,28 @@ const migrations: Migration[] = [
     description: 'Initial schema - create materials, inspirations, tags tables',
     up: (db) => {
       db.exec(`
+        CREATE TABLE IF NOT EXISTS projects (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          desc TEXT DEFAULT '',
+          create_time TEXT DEFAULT CURRENT_TIMESTAMP,
+          update_time TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS contents (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          chapter TEXT,
+          content TEXT,
+          word_count INTEGER DEFAULT 0,
+          create_time TEXT DEFAULT CURRENT_TIMESTAMP,
+          update_time TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      db.exec(`
         CREATE TABLE IF NOT EXISTS materials (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           project_id TEXT NOT NULL,
