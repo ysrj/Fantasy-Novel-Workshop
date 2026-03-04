@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from '@jest/globals'
-import { RuleEngine, Rule, RuleContext, RuleResult } from '../../../../main/engine/RuleEngine'
-import { combatRules } from '../../../../main/engine/rules/CombatRules'
-import { writingTechniqueRules } from '../../../../main/engine/rules/WritingTechniqueRules'
-import { timelineRules, foreshadowingRules } from '../../../../main/engine/rules/TimelineRules'
+import { RuleEngine, Rule, RuleContext, RuleResult } from '../../../src/main/engine/RuleEngine'
+import { combatRules } from '../../../src/main/engine/rules/CombatRules'
+import { writingTechniqueRules } from '../../../src/main/engine/rules/WritingTechniqueRules'
+import { timelineRules, foreshadowingRules } from '../../../src/main/engine/rules/TimelineRules'
 
 describe('RuleEngine', () => {
   let engine: RuleEngine

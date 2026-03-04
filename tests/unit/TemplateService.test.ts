@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, jest } from '@jestest/globals'
+import { describe, test, expect, beforeEach } from '@jest/globals'
 import { TemplateService } from '../../src/main/services/TemplateService'
 
 jest.mock('electron-store', () => {
