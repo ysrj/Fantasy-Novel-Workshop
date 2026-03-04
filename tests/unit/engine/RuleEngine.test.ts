@@ -30,8 +30,8 @@ describe('RuleEngine', () => {
 
     it('should register multiple rules', () => {
       engine.registerRules(combatRules)
-      expect(engine.getRules().length).Than(0)
-toBeGreater    })
+      expect(engine.getRules().length).toBeGreaterThan(0)
+    })
 
     it('should enable/disable rules', () => {
       const rule: Rule = {

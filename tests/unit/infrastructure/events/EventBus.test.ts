@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals'
-import { EventBus, Events } from '../../../src/main/infrastructure/events/EventBus'
+import { EventBus, Events } from '../../../../src/main/infrastructure/events/EventBus'
 
 describe('EventBus', () => {
   beforeEach(() => {
