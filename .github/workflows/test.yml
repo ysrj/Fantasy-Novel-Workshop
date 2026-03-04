@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
     branches: [main]
 
@@ -94,6 +94,14 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Package application (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Prepare native deps for packaging
+          npm run postinstall || true
+          # Run electron-builder to create installer (validate packaging)
+          npm run package || true
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
