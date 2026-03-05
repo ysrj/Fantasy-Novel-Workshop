@@ -23,6 +23,35 @@ export interface MigrateOptions {
 
 export async function migrateLegacyFromPath(db: Database.Database, userDataPath: string, options: MigrateOptions = {}): Promise<void> {
   const report: any = { files: [], inserted: {}, skipped: {}, errors: [] }
+  // Attempt to backup current DB before migration (if not dryRun)
+  if (!options.dryRun) {
+    try {
+      const backupDir = options.reportDir || join(userDataPath, 'migration_reports')
+      fs.mkdirSync(backupDir, { recursive: true })
+      const backupPath = join(backupDir, `fnw-db-backup-${Date.now()}.sqlite`)
+      try {
+        // Try VACUUM INTO (creates a copy of the database)
+        db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`)
+        log.info(`[LegacyMigrator] Database backed up via VACUUM INTO to ${backupPath}`)
+      } catch {
+        // Fallback: try to copy DB file if accessible
+        try {
+          // attempt to read sqlite_master to ensure file exists and path accessible
+          const alt = join(userDataPath, 'database', 'fnw.db')
+          if (fs.existsSync(alt)) {
+            fs.copyFileSync(alt, backupPath)
+            log.info(`[LegacyMigrator] Database file copied to ${backupPath}`)
+          }
+        } catch (e) {
+          log.warn('[LegacyMigrator] Backup failed; proceeding without file backup', e)
+          report.errors.push({ stage: 'backup', error: String(e) })
+        }
+      }
+    } catch (e) {
+      log.warn('[LegacyMigrator] Failed to create backup directory', e)
+      report.errors.push({ stage: 'backup-dir', error: String(e) })
+    }
+  }
   const candidates = [
     'fnw-export.json',        // 可能的 JSON 导出（推荐）
     'fnw-sqljs.json',
@@ -98,6 +127,21 @@ export async function migrateLegacyFromPath(db: Database.Database, userDataPath:
 async function migrateJsonPayload(db: Database.Database, payload: any, options: MigrateOptions = {}, report: any = {}) {
   if (!payload || typeof payload !== 'object') return
 
+  // 简单字段映射表：支持旧导出使用不同字段名的兼容
+  const defaultFieldMap: Record<string, Record<string, string>> = {
+    projects: {
+      description: 'desc',
+      created_at: 'create_time',
+      updated_at: 'update_time'
+    },
+    contents: {
+      created_at: 'create_time',
+      updated_at: 'update_time',
+      projectId: 'project_id',
+      project_id: 'project_id'
+    }
+  }
+
   // 辅助：在事务中插入数组数据（如果目标表存在）
   function safeInsertArray(table: string, columns: string[], rows: any[]) {
     if (!rows || !rows.length) return
@@ -106,9 +150,16 @@ async function migrateJsonPayload(db: Database.Database, payload: any, options: 
     const sql = `INSERT OR IGNORE INTO ${table} (${columns.join(',')}) VALUES (${placeholders})`
     try {
       const stmt = db.prepare(sql)
+      const fieldMap = options['fieldMap'] || defaultFieldMap[table] || {}
       const txn = db.transaction((items: any[]) => {
         for (const item of items) {
-          const vals = columns.map(c => (c in item ? item[c] : null))
+          // Normalize item keys according to mapping
+          const normalized: any = {}
+          for (const key of Object.keys(item)) {
+            const mapped = fieldMap[key] || key
+            normalized[mapped] = item[key]
+          }
+          const vals = columns.map(c => (c in normalized ? normalized[c] : (c in item ? item[c] : null)))
           if (!options.dryRun) {
             stmt.run(...vals)
             report.inserted[table].inserted++
