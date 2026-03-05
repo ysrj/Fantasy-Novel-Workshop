@@ -57,6 +57,13 @@ export class AIService {
       if (response.ok) {
         const data = await response.json()
         return data.response
+      } else {
+        const errorText = await response.text()
+        if (errorText.includes('does not support image input') || errorText.includes('image')) {
+          log.error('Ollama: 当前模型不支持图片输入')
+          return '❌ 错误：当前模型不支持图片输入。请在设置中切换到支持视觉的模型（如 llava、minicpm-v）。'
+        }
+        log.error('Ollama generate error:', errorText)
       }
     } catch (error) {
       log.error('Ollama generate error:', error)
@@ -83,6 +90,13 @@ export class AIService {
       if (response.ok) {
         const data = await response.json()
         return data.message.content
+      } else {
+        const errorText = await response.text()
+        if (errorText.includes('does not support image input') || errorText.includes('image')) {
+          log.error('Ollama: 当前模型不支持图片输入，请使用视觉模型如 llava 或 minicpm-v')
+          return '❌ 错误：当前模型不支持图片输入。请在设置中切换到支持视觉的模型（如 llava、minicpm-v），或移除图片后重试。'
+        }
+        log.error('Ollama chat error:', errorText)
       }
     } catch (error) {
       log.error('Ollama chat error:', error)
