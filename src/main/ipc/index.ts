@@ -1,5 +1,6 @@
 import { ipcMain, dialog } from 'electron'
 import Store from 'electron-store'
+import log from 'electron-log'
 import { container } from '../di/ServiceContainer'
 import { DatabaseService } from '../services/DatabaseService'
 import { ProjectService } from '../services/ProjectService'
@@ -512,5 +513,17 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('performance:forceGC', async () => {
     await getPerformanceService().forceGC()
     return true
+  })
+
+  ipcMain.on('*', (channel, ...args) => {
+    log.warn(`[IPC] Unhandled channel: ${channel}`)
+  })
+
+  process.on('uncaughtException', (error) => {
+    log.error('[IPC] Uncaught exception in IPC handlers:', error)
+  })
+
+  process.on('unhandledRejection', (reason) => {
+    log.error('[IPC] Unhandled rejection in IPC handlers:', reason)
   })
 }
