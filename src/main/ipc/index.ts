@@ -1,5 +1,6 @@
 import { ipcMain, dialog } from 'electron'
 import Store from 'electron-store'
+import log from 'electron-log'
 import { container } from '../di/ServiceContainer'
 import { DatabaseService } from '../services/DatabaseService'
 import { ProjectService } from '../services/ProjectService'
@@ -21,6 +22,7 @@ import { FileIndexService } from '../services/FileIndexService'
 import { TemplateService } from '../services/TemplateService'
 import { CombatService } from '../services/CombatService'
 import { TimelineService } from '../services/TimelineService'
+import { PerformanceService } from '../services/PerformanceService'
 
 const store = new Store()
 
@@ -44,6 +46,7 @@ function getFileIndexService() { return container.get<FileIndexService>('fileInd
 function getTemplateService() { return container.get<TemplateService>('template') }
 function getCombatService() { return container.get<CombatService>('combat') }
 function getTimelineService() { return container.get<TimelineService>('timeline') }
+function getPerformanceService() { return container.get<PerformanceService>('performance') }
 
 export function setupIpcHandlers(): void {
   // Project handlers
@@ -492,5 +495,35 @@ export function setupIpcHandlers(): void {
 
   ipcMain.handle('timeline:summary', (_, projectId) => {
     return getTimelineService().getTimelineSummary(projectId)
+  })
+
+  ipcMain.handle('performance:getMemoryUsage', () => {
+    return getPerformanceService().getMemoryUsage()
+  })
+
+  ipcMain.handle('performance:clearCache', () => {
+    getPerformanceService().clearCache()
+    return true
+  })
+
+  ipcMain.handle('performance:clearExpiredCache', () => {
+    return getPerformanceService().clearExpiredCache()
+  })
+
+  ipcMain.handle('performance:forceGC', async () => {
+    await getPerformanceService().forceGC()
+    return true
+  })
+
+  ipcMain.on('*', (channel, ...args) => {
+    log.warn(`[IPC] Unhandled channel: ${channel}`)
+  })
+
+  process.on('uncaughtException', (error) => {
+    log.error('[IPC] Uncaught exception in IPC handlers:', error)
+  })
+
+  process.on('unhandledRejection', (reason) => {
+    log.error('[IPC] Unhandled rejection in IPC handlers:', reason)
   })
 }

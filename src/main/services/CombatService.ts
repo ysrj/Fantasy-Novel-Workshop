@@ -176,13 +176,13 @@ export class CombatService {
   validateAllBattles(
     battleRecords: Battle[],
     powerScale: PowerScale,
-    realms: { id: string; name: string; order: number }[]
+    realms: PowerLevel[]
   ): { warnings: CombatWarning[]; validations: BattleValidation[] } {
     const warnings: CombatWarning[] = []
     const validations: BattleValidation[] = []
     
     const realmOrder: Record<string, number> = {}
-    realms.forEach(r => { realmOrder[r.name] = r.order })
+    realms.forEach(r => { realmOrder[r.realm] = r.value })
     
     battleRecords.forEach(battle => {
       const validation = this.validateBattle(battle, powerScale, realmOrder)

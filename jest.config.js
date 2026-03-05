@@ -22,6 +22,9 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@main/(.*)$': '<rootDir>/src/main/$1',
+    '^@renderer/(.*)$': '<rootDir>/src/renderer/$1',
+    '^@shared/(.*)$': '<rootDir>/src/shared/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
   setupFilesAfterEnv: ['<rootDir>/tests/__mocks__/setupTests.ts'],

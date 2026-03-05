@@ -27,6 +27,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup MSBuild (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Rebuild native modules (ensure better-sqlite3 ABI match)
+        run: |
+          mkdir -p build-logs || true
+          set -o pipefail || true
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Use PowerShell on Windows runners
+            powershell -Command "npm rebuild better-sqlite3 --build-from-source 2>&1 | Tee-Object -FilePath build-logs\rebuild-better-sqlite3.log"
+          else
+            npm rebuild better-sqlite3 --build-from-source 2>&1 | tee build-logs/rebuild-better-sqlite3.log
+          fi
+        env:
+          CI: true
+
       - name: Rebuild native modules (ensure better-sqlite3 ABI match)
         run: |
           npm rebuild better-sqlite3 --build-from-source || true
@@ -51,6 +68,7 @@ jobs:
           path: |
             coverage/
             **/test-results/**
+            build-logs/
 
   lint:
     runs-on: ubuntu-latest

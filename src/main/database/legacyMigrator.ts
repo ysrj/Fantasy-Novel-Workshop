@@ -16,7 +16,13 @@ export async function migrateLegacyFromUserData(db: Database.Database): Promise<
 }
 
 // 可供测试或手动调用的核心方法（不依赖 electron 的 app）
-export async function migrateLegacyFromPath(db: Database.Database, userDataPath: string): Promise<void> {
+export interface MigrateOptions {
+  dryRun?: boolean
+  reportDir?: string
+}
+
+export async function migrateLegacyFromPath(db: Database.Database, userDataPath: string, options: MigrateOptions = {}): Promise<void> {
+  const report: any = { files: [], inserted: {}, skipped: {}, errors: [] }
   const candidates = [
     'fnw-export.json',        // 可能的 JSON 导出（推荐）
     'fnw-sqljs.json',
@@ -32,16 +38,23 @@ export async function migrateLegacyFromPath(db: Database.Database, userDataPath:
     try {
       log.info(`[LegacyMigrator] Found legacy export: ${p}`)
 
+      report.files.push(p)
+
       if (name.endsWith('.json')) {
         const raw = fs.readFileSync(p, 'utf8')
-        const payload = JSON.parse(raw)
+        let payload: any
+        try { payload = JSON.parse(raw) } catch (e) { report.errors.push({ file: p, error: 'invalid_json' }); continue }
 
         // 支持最常见的 JSON 导出结构：{ projects: [...], contents: [...], characters: [...], worldviews: [...] }
-        await migrateJsonPayload(db, payload)
+        await migrateJsonPayload(db, payload, options, report)
 
-        const migratedName = `${p}.migrated.${Date.now()}`
-        fs.renameSync(p, migratedName)
-        log.info(`[LegacyMigrator] JSON migrated and original renamed to ${migratedName}`)
+        if (!options.dryRun) {
+          const migratedName = `${p}.migrated.${Date.now()}`
+          fs.renameSync(p, migratedName)
+          log.info(`[LegacyMigrator] JSON migrated and original renamed to ${migratedName}`)
+        } else {
+          log.info(`[LegacyMigrator] Dry-run: JSON would be migrated (no file rename)`)
+        }
       } else if (name.endsWith('.sqlite') || name.endsWith('.db')) {
         // ATTACH 老数据库并拷贝表（如果存在）
         // 注意：路径需为绝对并对 current process 可读取
@@ -53,10 +66,15 @@ export async function migrateLegacyFromPath(db: Database.Database, userDataPath:
           const tablesToCopy = ['projects', 'contents', 'characters', 'worldviews', 'materials', 'kb_entries']
           for (const t of tablesToCopy) {
             try {
-              db.exec(`INSERT OR IGNORE INTO ${t} SELECT * FROM ${attachAlias}.${t}`)
-              log.info(`[LegacyMigrator] Copied table ${t} from legacy DB`)
-            } catch {
+              if (!options.dryRun) {
+                db.exec(`INSERT OR IGNORE INTO ${t} SELECT * FROM ${attachAlias}.${t}`)
+                log.info(`[LegacyMigrator] Copied table ${t} from legacy DB`)
+              } else {
+                log.info(`[LegacyMigrator] Dry-run: would copy table ${t} from legacy DB`)
+              }
+            } catch (e) {
               // 忽略单表错误（表不存在或结构不兼容）
+              report.errors.push({ file: p, table: t, error: String(e) })
               log.info(`[LegacyMigrator] Table ${t} not found or incompatible in legacy DB, skipped`)
             }
           }
@@ -77,12 +95,13 @@ export async function migrateLegacyFromPath(db: Database.Database, userDataPath:
   }
 }
 
-async function migrateJsonPayload(db: Database.Database, payload: any) {
+async function migrateJsonPayload(db: Database.Database, payload: any, options: MigrateOptions = {}, report: any = {}) {
   if (!payload || typeof payload !== 'object') return
 
   // 辅助：在事务中插入数组数据（如果目标表存在）
   function safeInsertArray(table: string, columns: string[], rows: any[]) {
     if (!rows || !rows.length) return
+    report.inserted[table] = report.inserted[table] || { attempted: 0, inserted: 0 }
     const placeholders = columns.map(() => '?').join(',')
     const sql = `INSERT OR IGNORE INTO ${table} (${columns.join(',')}) VALUES (${placeholders})`
     try {
@@ -90,12 +109,17 @@ async function migrateJsonPayload(db: Database.Database, payload: any) {
       const txn = db.transaction((items: any[]) => {
         for (const item of items) {
           const vals = columns.map(c => (c in item ? item[c] : null))
-          stmt.run(...vals)
+          if (!options.dryRun) {
+            stmt.run(...vals)
+            report.inserted[table].inserted++
+          }
+          report.inserted[table].attempted++
         }
       })
       txn(rows)
-      log.info(`[LegacyMigrator] Inserted ${rows.length} rows into ${table}`)
+      log.info(`[LegacyMigrator] Inserted ${rows.length} rows into ${table} (dryRun=${options.dryRun})`)
     } catch (e) {
+      report.errors.push({ table, error: String(e) })
       log.info(`[LegacyMigrator] Skipped inserting into ${table} due to error or incompatible schema`)
     }
   }
@@ -114,6 +138,17 @@ async function migrateJsonPayload(db: Database.Database, payload: any) {
     safeInsertArray('worldviews', ['id', 'project_id', 'name', 'description', 'created_at'], payload.worldviews)
   }
 }
+
+  // write report if requested
+  try {
+    const dir = options.reportDir || join(userDataPath, 'migration_reports')
+    fs.mkdirSync(dir, { recursive: true })
+    const out = join(dir, `migration-report-${Date.now()}.json`)
+    fs.writeFileSync(out, JSON.stringify(report, null, 2), 'utf8')
+    log.info(`[LegacyMigrator] Migration report written to ${out}`)
+  } catch (e) {
+    log.error('[LegacyMigrator] Failed to write migration report', e)
+  }
 
 export default {
   migrateLegacyFromUserData,
