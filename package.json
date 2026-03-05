@@ -39,6 +39,7 @@
     "chokidar": "^3.6.0",
     "electron-log": "^5.1.1",
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.1.8",
     "isomorphic-git": "^1.25.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -85,6 +86,31 @@
       ],
       "icon": "resources/icon.ico"
     },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icons",
+      "category": "Office"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
@@ -96,6 +122,11 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "your-github-username",
+      "repo": "fantasy-novel-workshop"
+    }
   }
 }

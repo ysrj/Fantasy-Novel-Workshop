@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log from 'electron-log'
 import { setupIpcHandlers } from './ipc'
 import { container } from './di/ServiceContainer'
+import { setupUpdateIpcHandlers } from './services/AutoUpdateService'
 
 log.transports.file.level = 'info'
 log.transports.console.level = 'debug'
@@ -63,6 +64,7 @@ app.whenReady().then(async () => {
 
   await container.initialize()
   setupIpcHandlers()
+  setupUpdateIpcHandlers()
   createWindow()
 
   app.on('activate', function () {

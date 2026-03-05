@@ -18,6 +18,8 @@ import { FileIndexService } from '../services/FileIndexService'
 import { TemplateService } from '../services/TemplateService'
 import { CombatService } from '../services/CombatService'
 import { TimelineService } from '../services/TimelineService'
+import { AutoUpdateService } from '../services/AutoUpdateService'
+import { PerformanceService } from '../services/PerformanceService'
 import log from 'electron-log'
 
 export class ServiceContainer {
@@ -62,6 +64,8 @@ export class ServiceContainer {
     this.services.set('template', new TemplateService())
     this.services.set('combat', new CombatService())
     this.services.set('timeline', new TimelineService())
+    this.services.set('autoUpdate', new AutoUpdateService())
+    this.services.set('performance', new PerformanceService())
 
     const db = this.get<DatabaseService>('database')
     this.services.set('material', new MaterialService(db))
